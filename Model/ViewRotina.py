@@ -15,13 +15,14 @@ import subprocess
 import time
 
 class TelaViewRotina(QDialog):
-    def __init__(self, dado=None, io=None, db=None, rotina = None, target=None):
+    def __init__(self, dado=None, io=None, db=None, rotina = None, target=None, esquerdo_direito=None):
         super().__init__()
         self.dado = dado
         self.io = io
         self.database = db
         self.rotina = rotina
         self.target = target
+        self.esquerdo_direito = esquerdo_direito
         self.nome_programa = ""
 
         self.msg = SimpleMessageBox()
@@ -45,7 +46,11 @@ class TelaViewRotina(QDialog):
         self.model.setHorizontalHeaderLabels(['Ordem Produ.','Qtd. Produzir', 'Login'])
 
         # Obtenha todos os registros do banco de dados
-        records = self.database.get_all_records_op()
+        try:
+            records = self.database.get_all_records_op_by_esquerdo_direito(self.esquerdo_direito)
+        except Exception as e:
+            print("Erro ao buscar registros:", e)
+            records = []
 
         # Preencha o QStandardItemModel com os registros
         for row_data in records:

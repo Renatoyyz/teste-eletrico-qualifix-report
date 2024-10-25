@@ -71,6 +71,10 @@ class TelaLogin(QDialog):
                 #se for tela operaçao, todos podem
                 elif self.target == self.dado.TELA_OP:
                     try:
+                        self.dado.set_telas(self.dado.TELA_CONFIG)
+                        self.dado.set_nome_login(user_loc[1])
+                        self.dado.set_senha_login(user_loc[2])
+                        self.dado.set_permissao_login(user_loc[3])
                         tela_op = TelaOP(dado=self.dado, io=self.io, db=self.database, rotina=self.rotina)
                         tela_op.exec_()
                         self.close()

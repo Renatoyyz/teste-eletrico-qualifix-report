@@ -169,6 +169,22 @@ class DataBase:
         except sqlite3.Error as e:
             logging.error(f"Erro ao buscar todos os registros de op: {e}")
             return []
+        
+    def get_all_records_op_by_esquerdo_direito(self, esquerda_direita):
+        try:
+            self.cursor.execute('SELECT * FROM op WHERE esquerda_direita = ?', (esquerda_direita,))
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar todos os registros de op pelo lado: {e}")
+            return []
+    
+    def get_all_records_op_by_ordem_producao_esquerdo_direito(self, ordem_producao, esquerda_direita):
+        try:
+            self.cursor.execute('SELECT * FROM op WHERE ordem_producao = ? AND esquerda_direita = ?', (ordem_producao, esquerda_direita))
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar todos os registros de op pelo lado e ordem de produção: {e}")
+            return []
 
     def update_record_op(self, record_id, ordem_producao, quantidade_produzir, receita_peca, esquerda_direita, login, criado, finalizado, fim_op):
         try:

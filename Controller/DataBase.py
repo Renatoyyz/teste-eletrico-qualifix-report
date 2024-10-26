@@ -185,6 +185,22 @@ class DataBase:
         except sqlite3.Error as e:
             logging.error(f"Erro ao buscar todos os registros de op pelo lado e ordem de produção: {e}")
             return []
+        
+    def record_op_exists(self, ordem_producao, esquerda_direita):
+        try:
+            self.cursor.execute('SELECT * FROM op WHERE ordem_producao = ? AND esquerda_direita = ?', (ordem_producao, esquerda_direita))
+            return self.cursor.fetchone() is not None
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao verificar se a ordem de produção existe: {e}")
+            return False
+        
+    def get_id_op(self, ordem_producao, esquerda_direita):
+        try:
+            self.cursor.execute('SELECT id FROM op WHERE ordem_producao = ? AND esquerda_direita = ?', (ordem_producao, esquerda_direita))
+            return self.cursor.fetchone()[0]
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar o ID da ordem de produção: {e}")
+            return None
 
     def update_record_op(self, record_id, ordem_producao, quantidade_produzir, receita_peca, esquerda_direita, login, criado, finalizado, fim_op):
         try:

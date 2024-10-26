@@ -158,23 +158,33 @@ class TelaOP(QDialog):
         if self.ui.cbxLadoEsquerdo.isChecked():
             nome_op_esquerdo = self.ui.txNomeOP_Esquerdo.text()
             quantidade_op_esquerdo = self.ui.txQuantidadeOP_Esquerdo.text()
-            if nome_op_esquerdo and quantidade_op_esquerdo:
-                self.database.create_record_op(
+            if nome_op_esquerdo and quantidade_op_esquerdo and receita_peca:
+                if not self.database.record_op_exists(nome_op_esquerdo, 'esquerdo'):
+                    self.database.create_record_op(
                     nome_op_esquerdo, quantidade_op_esquerdo, receita_peca, 'esquerdo', login, criado, finalizado, fim_op
-                )
+                    )
+                    self.id_esquerdo = self.database.get_id_op(nome_op_esquerdo, 'esquerdo')
+                else:
+                    print("A ordem de produção esquerdo já existe.")
 
         if self.ui.cbxLadoDireito.isChecked():
             nome_op_direito = self.ui.txNomeOP_Direito.text()
             quantidade_op_direito = self.ui.txQuantidadeOP_Direito.text()
-            if nome_op_direito and quantidade_op_direito:
-                self.database.create_record_op(
+            if nome_op_direito and quantidade_op_direito and receita_peca:
+                if not self.database.record_op_exists(nome_op_direito, 'direito'):
+                    self.database.create_record_op(
                     nome_op_direito, quantidade_op_direito, receita_peca, 'direito', login, criado, finalizado, fim_op
-                )
+                    )
+                    self.id_direito = self.database.get_id_op(nome_op_direito, 'direito')
+                else:
+                    print("A ordem de produção direito já existe.")
 
         self.nome_ordem_producao_esquerdo = self.ui.txNomeOP_Esquerdo.text()
         self.nome_ordem_producao_direito = self.ui.txNomeOP_Direito.text()
-        self.id_esquerdo = self.id_esquerdo
-        self.id_direito = self.id_direito
+
+    # A partir desse ponto, o sistema deve fechar a tela de ordem de produção e abrir a tela de ExecucaoPrograma, passando os parametros necessarios
+    # A tela de ExecucaoPrograma deve ser reajustada para receber novo banco de dados e novos parametros
+    # Corrigir em Database.py para criar tabelas de status de ordem de produção, tais como: motivo de parada, troca de operador, etc. 
 
     def voltar(self):
         self.close()

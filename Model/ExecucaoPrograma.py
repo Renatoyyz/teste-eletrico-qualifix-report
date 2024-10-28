@@ -171,10 +171,10 @@ class ExecutaRotinaThread(QThread):
 
 
 class TelaExecucao(QDialog):
-    def __init__(self, dado=None, io=None, db=None, rotina=None, nome_prog=None, continuacao=None, db_rotina=None):
+    def __init__(self, dado=None, io=None, db=None, rotina=None, nome_receita=None, nome_ordem_producao_esquerdo=None, nome_ordem_producao_direito=None, id_esquerdo=None, id_direito=None):
         super().__init__()
         try:
-            self.inicializa_variaveis(dado, io, db, rotina, nome_prog, continuacao, db_rotina)
+            self.inicializa_variaveis(dado, io, db, rotina, nome_receita, nome_ordem_producao_esquerdo, nome_ordem_producao_direito, id_esquerdo, id_direito)
             self.inicializa_estados()
             self.inicializa_cores()
             self.inicializa_contadores()
@@ -187,16 +187,18 @@ class TelaExecucao(QDialog):
             logging.error(f"Erro na inicialização da TelaExecucao: {e}")
 
 
-    def inicializa_variaveis(self, dado, io, db, rotina, nome_prog, continuacao, db_rotina):
+    def inicializa_variaveis(self, dado, io, db, rotina, nome_receita, nome_ordem_producao_esquerdo, nome_ordem_producao_direito, id_esquerdo, id_direito):
         self.dado = dado
         self.io = io
         self.database = db
         self.rotina = rotina
-        self.nome_prog = nome_prog
-        self.continuacao = continuacao
-        self.db_rotina = db_rotina
+        self.nome_receita = nome_receita
         self.tempo_ciclo = 0
         self._translate = QCoreApplication.translate
+        self.nome_ordem_producao_esquerdo = nome_ordem_producao_esquerdo
+        self.nome_ordem_producao_direito = nome_ordem_producao_direito
+        self.id_esquerdo = id_esquerdo
+        self.id_direito = id_direito
 
     def inicializa_estados(self):
         self.habili_desbilita_esquerdo = True
@@ -210,6 +212,13 @@ class TelaExecucao(QDialog):
         self.esquerda_iso_ok = 0
         self.direita_condu_ok = 0
         self.direita_iso_ok = 0
+        self.id_rotina = None
+        self.nome_op_esquerdo = None
+        self.nome_op_direito = None
+        self.quantidade_produzir_esquerdo = 0
+        self.quantidade_produzir_direito = 0
+        self.quantidade_produzida_esquerdo = 0
+        self.quantidade_produzida_direito = 0
 
     def inicializa_cores(self):
         self.VERDE = "170, 255, 127"
@@ -219,7 +228,6 @@ class TelaExecucao(QDialog):
         self.LILAZ = "192, 82, 206"
 
     def inicializa_contadores(self):
-        self._cnt_ciclos = 1
         self._cnt_peca_passou_e = 0
         self._cnt_peca_passou_d = 0
         self._cnt_peca_reprovou_e = 0
@@ -239,7 +247,6 @@ class TelaExecucao(QDialog):
         self._ofset_temo = 0
         self._retrabalho = False
         self.rotina_iniciada = False
-        self._nome_rotina_execucao = ""
         self._visualiza_condu_e = False
         self._visualiza_condu_d = False
         self._visualiza_iso_e = False
@@ -294,6 +301,81 @@ class TelaExecucao(QDialog):
         except Exception as e:
             logging.error(f"Erro na inicialização das threads: {e}")
 
+    def load_config(self):
+        self.qual_teste = self.SEM_TESTE
+        self.muda_cor_obj("lbContinuIndicaE",self.CINZA)
+        self.muda_cor_obj("lbContinuIndicaD",self.CINZA)
+        self.muda_cor_obj("lbIsolaIndicaE",self.CINZA)
+        self.muda_cor_obj("lbIsolaIndicaD",self.CINZA)
+
+        self.ui.btRetrabalhar.setDisabled(True)
+        self.ui.btDescartar.setDisabled(True)
+        self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina parada</p></body></html>"))
+        self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
+        try:
+            self.id_rotina, self.rotina_nome_rotina, self.rotina.url_img_esquerdo, self.rotina.url_img_direito, self.rotina.coord_eletrodo_esquerdo, self.rotina.coord_eletrodo_direito, self.rotina.condutividade_esquerdo, self.rotina.condutividade_direito, self.rotina.isolacao_esquerdo, self.rotina.isolacao_direito = self.database.search_name_receita(self.nome_receita)
+     
+            # Carrega nomes da op em variáveis globais
+            self.nome_op_esquerdo = self.database.get_record_op_by_id(self.id_esquerdo)[1] if self.id_esquerdo else None
+            self.nome_op_direito = self.database.get_record_op_by_id(self.id_direito)[1] if self.id_direito else None
+            # Carrega a quantidade de peças a serem produzidas do lado esquerdo e direito
+            self.quantidade_produzir_esquerdo = self.database.get_record_op_by_id(self.id_esquerdo)[2] if self.id_esquerdo else 0
+            self.quantidade_produzir_direito = self.database.get_record_op_by_id(self.id_direito)[2] if self.id_direito else 0
+
+            # Carrega a quantidade de peças produzidas do lado esquerdo e direito
+            try:
+                self.quantidade_produzida_esquerdo = sum(
+                    [self.database.get_record_registro_op_by_id(record_id)[2] + 
+                     self.database.get_record_registro_op_by_id(record_id)[3] + 
+                     self.database.get_record_registro_op_by_id(record_id)[4] 
+                     for record_id in [self.id_esquerdo] if record_id]
+                )
+            except:
+                self.quantidade_produzida_esquerdo = 0
+
+            try:
+                self.quantidade_produzida_direito = sum(
+                    [self.database.get_record_registro_op_by_id(record_id)[2] + 
+                     self.database.get_record_registro_op_by_id(record_id)[3] + 
+                     self.database.get_record_registro_op_by_id(record_id)[4] 
+                     for record_id in [self.id_direito] if record_id]
+                )
+            except:
+                self.quantidade_produzida_direito = 0
+
+            # Carrega as duas imagens
+            dir_open = OpenFile(dado=self.dado, io=self.io, db=self.database)
+            dir_open.load_image_url(image_path=self.rotina.url_img_esquerdo , size_x=self.ui.lbImgEsquerdo.width() , size_y=self.ui.lbImgEsquerdo.height())
+            if dir_open.image != None:
+                self.ui.lbImgEsquerdo.setPixmap(dir_open.image)
+            dir_open.load_image_url(image_path=self.rotina.url_img_direito , size_x=self.ui.lbImgDireito.width() , size_y=self.ui.lbImgDireito.height())
+            if dir_open.image != None:
+                self.ui.lbImgDireito.setPixmap(dir_open.image)
+
+            #Atribui nome do programa
+            self.ui.lbNomePrograma_Esquerdo.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{self.nome_op_esquerdo}</p></body></html>"))
+            self.ui.lbNomePrograma_Direito.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{self.nome_op_direito}</p></body></html>"))
+            self.ui.lbNomeRotina.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{self.rotina_nome_rotina}</p></body></html>"))
+
+            self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
+            self.atualiza_producao_label("D", self.quantidade_produzida_direito, self.quantidade_produzir_direito)
+
+            #Limpa os eletrodos
+            self.limpaeletrodo()
+            self.rotina.limpa_saidas_esquerda_direita()# Desativa todos os relés por segurança
+
+            self._carrega_eletrodos(self.rotina.coord_eletrodo_esquerdo, "E")# O 'E' é para formar o texto que criará o objeto lbEletrodo1_E
+            self._carrega_eletrodos(self.rotina.coord_eletrodo_direito, "D")# O 'D' é para formar o texto que criará o objeto lbEletrodo1_D
+
+        except:
+            print("Erro de carregamento...")
+
+    def atualiza_producao_label(self, lado, produzido, produzir):
+        if lado == "E":
+            self.ui.lbQtdPrducaoEsquerdo.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{ produzido } de { produzir }</p></body></html>"))
+        elif lado == "D":
+            self.ui.lbQtdPrducaoDireito.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{ produzido } de { produzir }</p></body></html>"))
+    
     def muda_texto_obj(self, obj_str, text):
         obj_tom_conec = f"{obj_str}"
         cur_obj_tom_conec = getattr(self.ui, obj_tom_conec)
@@ -328,7 +410,6 @@ class TelaExecucao(QDialog):
                     self._nao_passsou_peca = False
                     self.em_execucao = True
                     self.tempo_ciclo = 0
-                    self.muda_texto_obj("txNumerosCiclos",self._cnt_ciclos)
                     self.oscila_cor = False
                     self._carrega_eletrodos(self.rotina.coord_eletrodo_esquerdo, "E")# O 'E' é para formar o texto que criará o objeto lbEletrodo1_E
                     self._carrega_eletrodos(self.rotina.coord_eletrodo_direito, "D")# O 'D' é para formar o texto que criará o objeto lbEletrodo1_D
@@ -631,7 +712,6 @@ class TelaExecucao(QDialog):
     #               2 : Passou só a direita habilitada
     def _carrega_peca_passou(self, qual_passou):
             if qual_passou == 0:
-                self._cnt_ciclos+=1
                 if self._retrabalho == False:# Se não for um retrabalho 
                     self._cnt_peca_passou_e += 1
                     self._cnt_peca_passou_d += 1
@@ -665,7 +745,6 @@ class TelaExecucao(QDialog):
                 self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
                 
             elif qual_passou == 1:
-                self._cnt_ciclos+=1
                 if self._retrabalho == False:# Se não for um retralho 
                     self._cnt_peca_passou_e += 1
                     self.ui.txAprovadoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_passou_e}"))
@@ -694,7 +773,6 @@ class TelaExecucao(QDialog):
                 self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
                 self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
             elif qual_passou == 2:
-                self._cnt_ciclos+=1
                 if self._retrabalho == False:# Se não for um retralho 
                     self._cnt_peca_passou_d += 1
                     self.ui.txAprovadoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_passou_d}"))
@@ -746,58 +824,6 @@ class TelaExecucao(QDialog):
             ret_cond = False
             ret_iso = False
         return ret_cond, ret_iso
-
-    def load_config(self):
-        self.qual_teste = self.SEM_TESTE
-        self.muda_cor_obj("lbContinuIndicaE",self.CINZA)
-        self.muda_cor_obj("lbContinuIndicaD",self.CINZA)
-        self.muda_cor_obj("lbIsolaIndicaE",self.CINZA)
-        self.muda_cor_obj("lbIsolaIndicaD",self.CINZA)
-
-        self.ui.btRetrabalhar.setDisabled(True)
-        self.ui.btDescartar.setDisabled(True)
-        self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina parada</p></body></html>"))
-        self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
-        try:
-            self.id, self.rotina.nome_programa, self.rotina.url_img_esquerdo, self.rotina.url_img_direito, self.rotina.coord_eletrodo_esquerdo, self.rotina.coord_eletrodo_direito, self.rotina.condutividade_esquerdo, self.rotina.condutividade_direito, self.rotina.isolacao_esquerdo, self.rotina.isolacao_direito = self.database.search_name_receita(self.nome_prog)
-
-            if self.continuacao == True:# Se for uma continuação de outra rotina
-                self.rotina_iniciada = self.continuacao
-                self.ui.txAprovadoE.setText(str(self.db_rotina[2]))
-                self.ui.txAprovadoD.setText(str(self.db_rotina[3]))
-                self.ui.txReprovadoE.setText(str(self.db_rotina[4]))
-                self.ui.txReprovadoD.setText(str(self.db_rotina[5]))
-                self.ui.txRetrabalhoE.setText(str(self.db_rotina[6]))
-                self.ui.txRetrabalhoD.setText(str(self.db_rotina[7]))
-                self.ui.txNumerosCiclos.setText(str(self.db_rotina[12]))
-                self._cnt_ciclos = self.db_rotina[12]
-                self._nome_rotina_execucao = self.db_rotina[1]
-            else:
-                # formata nome da rotina
-                self._nome_rotina_execucao = f"{self.rotina.nome_programa}${QDateTime.currentDateTime().toString('ddMMyyyy_HHmmss')}"
-
-            
-            # Carrega as duas imagens
-            dir_open = OpenFile(dado=self.dado, io=self.io, db=self.database)
-            dir_open.load_image_url(image_path=self.rotina.url_img_esquerdo , size_x=self.ui.lbImgEsquerdo.width() , size_y=self.ui.lbImgEsquerdo.height())
-            if dir_open.image != None:
-                self.ui.lbImgEsquerdo.setPixmap(dir_open.image)
-            dir_open.load_image_url(image_path=self.rotina.url_img_direito , size_x=self.ui.lbImgDireito.width() , size_y=self.ui.lbImgDireito.height())
-            if dir_open.image != None:
-                self.ui.lbImgDireito.setPixmap(dir_open.image)
-
-            #Atribui nome do programa
-            self.ui.lbNomePrograma.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{self.rotina.nome_programa}</p></body></html>"))
-
-            #Limpa os eletrodos
-            self.limpaeletrodo()
-            self.rotina.limpa_saidas_esquerda_direita()# Desativa todos os relés por segurança
-
-            self._carrega_eletrodos(self.rotina.coord_eletrodo_esquerdo, "E")# O 'E' é para formar o texto que criará o objeto lbEletrodo1_E
-            self._carrega_eletrodos(self.rotina.coord_eletrodo_direito, "D")# O 'D' é para formar o texto que criará o objeto lbEletrodo1_D
-
-        except:
-            print("Erro de carregamento...")
 
     def _carrega_eletrodos(self, coord, lado):
         try:
@@ -905,7 +931,6 @@ class TelaExecucao(QDialog):
     def inicia_execucao(self):
         if self.execucao_habilita_desabilita == False:
             self.rotina.sobe_pistao()
-            self.muda_texto_obj("txNumerosCiclos",self._cnt_ciclos)
             self.execucao_habilita_desabilita = True# Habilita para executar programa
             # Desabilita botões que não podem ser acionados durante programa
             self._desabilita_botoes(False)
@@ -1109,53 +1134,54 @@ class TelaExecucao(QDialog):
         self.ui.btContato.setEnabled(hab_dasab)
 
     def salva_rotina(self, finalizado=False):
-        try:
-            if finalizado == False:
+        pass
+        # try:
+        #     if finalizado == False:
 
-                if self.rotina_iniciada == False:# Se for a primeira vez
-                    self.rotina_iniciada = True # Sinaliza variável que indica que já foi gravado
-                    self.database.create_record_rotina(self._nome_rotina_execucao,
-                                                    int(self.ui.txAprovadoE.text()),
-                                                    int(self.ui.txAprovadoD.text()),
-                                                    int(self.ui.txReprovadoE.text()),
-                                                    int(self.ui.txReprovadoD.text()),
-                                                    int(self.ui.txRetrabalhoE.text()),
-                                                    int(self.ui.txRetrabalhoD.text()),
-                                                    QDateTime.currentDateTime(),
-                                                    QDateTime.currentDateTime(),
-                                                    self.dado.nome_login,
-                                                    0,# Zero indica que não terminou rotina
-                                                    int(self.ui.txNumerosCiclos.text())
-                                                    )
-                else:
-                    self.database.update_record_rotina_by_name_sem_data(self._nome_rotina_execucao,
-                                                                        self._nome_rotina_execucao,
-                                                                        int(self.ui.txAprovadoE.text()),
-                                                                        int(self.ui.txAprovadoD.text()),
-                                                                        int(self.ui.txReprovadoE.text()),
-                                                                        int(self.ui.txReprovadoD.text()),
-                                                                        int(self.ui.txRetrabalhoE.text()),
-                                                                        int(self.ui.txRetrabalhoD.text()),
-                                                                        self.dado.nome_login,
-                                                                        0,# Zero indica que não terminou rotina
-                                                                        int(self.ui.txNumerosCiclos.text())
-                                                                    )
-            else:
-                self.database.update_record_rotina_by_name_finalizado(self._nome_rotina_execucao,
-                                                                        self._nome_rotina_execucao,
-                                                                        int(self.ui.txAprovadoE.text()),
-                                                                        int(self.ui.txAprovadoD.text()),
-                                                                        int(self.ui.txReprovadoE.text()),
-                                                                        int(self.ui.txReprovadoD.text()),
-                                                                        int(self.ui.txRetrabalhoE.text()),
-                                                                        int(self.ui.txRetrabalhoD.text()),
-                                                                        QDateTime.currentDateTime(),#Data de finalização
-                                                                        self.dado.nome_login,
-                                                                        1,# Um indica terminou rotina
-                                                                        int(self.ui.txNumerosCiclos.text())
-                                                                    )
-        except:
-            print("Erro em salvar_rotina(), banco de dados")
+        #         if self.rotina_iniciada == False:# Se for a primeira vez
+        #             self.rotina_iniciada = True # Sinaliza variável que indica que já foi gravado
+        #             self.database.create_record_rotina(self._nome_rotina_execucao,
+        #                                             int(self.ui.txAprovadoE.text()),
+        #                                             int(self.ui.txAprovadoD.text()),
+        #                                             int(self.ui.txReprovadoE.text()),
+        #                                             int(self.ui.txReprovadoD.text()),
+        #                                             int(self.ui.txRetrabalhoE.text()),
+        #                                             int(self.ui.txRetrabalhoD.text()),
+        #                                             QDateTime.currentDateTime(),
+        #                                             QDateTime.currentDateTime(),
+        #                                             self.dado.nome_login,
+        #                                             0,# Zero indica que não terminou rotina
+        #                                             int(self.ui.txNumerosCiclos.text())
+        #                                             )
+        #         else:
+        #             self.database.update_record_rotina_by_name_sem_data(self._nome_rotina_execucao,
+        #                                                                 self._nome_rotina_execucao,
+        #                                                                 int(self.ui.txAprovadoE.text()),
+        #                                                                 int(self.ui.txAprovadoD.text()),
+        #                                                                 int(self.ui.txReprovadoE.text()),
+        #                                                                 int(self.ui.txReprovadoD.text()),
+        #                                                                 int(self.ui.txRetrabalhoE.text()),
+        #                                                                 int(self.ui.txRetrabalhoD.text()),
+        #                                                                 self.dado.nome_login,
+        #                                                                 0,# Zero indica que não terminou rotina
+        #                                                                 int(self.ui.txNumerosCiclos.text())
+        #                                                             )
+        #     else:
+        #         self.database.update_record_rotina_by_name_finalizado(self._nome_rotina_execucao,
+        #                                                                 self._nome_rotina_execucao,
+        #                                                                 int(self.ui.txAprovadoE.text()),
+        #                                                                 int(self.ui.txAprovadoD.text()),
+        #                                                                 int(self.ui.txReprovadoE.text()),
+        #                                                                 int(self.ui.txReprovadoD.text()),
+        #                                                                 int(self.ui.txRetrabalhoE.text()),
+        #                                                                 int(self.ui.txRetrabalhoD.text()),
+        #                                                                 QDateTime.currentDateTime(),#Data de finalização
+        #                                                                 self.dado.nome_login,
+        #                                                                 1,# Um indica terminou rotina
+        #                                                                 int(self.ui.txNumerosCiclos.text())
+        #                                                             )
+        # except:
+        #     print("Erro em salvar_rotina(), banco de dados")
 
 
     def voltar(self):

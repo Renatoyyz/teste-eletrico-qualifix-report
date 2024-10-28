@@ -24,6 +24,9 @@ class DataBase:
             self.create_table_login()
             self.create_table_receita()
             self.criar_tabela_op()
+            self.criar_tabela_motivo_parada()
+            self.criar_tabela_motivo_finalizacao()
+            self.criar_tabela_troca_usuario()
 
             admin_temp = self.search_name_login(self._login_default)
             if admin_temp == None:
@@ -85,7 +88,177 @@ class DataBase:
             self.conn.commit()
         except sqlite3.Error as e:
             logging.error(f"Erro ao criar a tabela rotina: {e}")
+    
+    def criar_tabela_motivo_parada(self):
+        try:
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS motivo_parada (
+                        id INTEGER PRIMARY KEY,
+                        op_id INTEGER,
+                        motivo TEXT,
+                        FOREIGN KEY(op_id) REFERENCES op(id)
+                        )''')
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar a tabela motivo_parada: {e}")
 
+    def criar_tabela_motivo_finalizacao(self):
+        try:
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS motivo_finalizacao (
+                        id INTEGER PRIMARY KEY,
+                        op_id INTEGER,
+                        motivo TEXT,
+                        FOREIGN KEY(op_id) REFERENCES op(id)
+                        )''')
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar a tabela motivo_finalizacao: {e}")
+
+    def criar_tabela_troca_usuario(self):
+        try:
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS troca_usuario (
+                        id INTEGER PRIMARY KEY,
+                        op_id INTEGER,
+                        usuario_antigo TEXT,
+                        usuario_novo TEXT,
+                        timestamp TIMESTAMP,
+                        FOREIGN KEY(op_id) REFERENCES op(id)
+                        )''')
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar a tabela troca_usuario: {e}")
+
+    def create_record_motivo_parada(self, op_id, motivo):
+        try:
+            self.cursor.execute('''
+                INSERT INTO motivo_parada (op_id, motivo)
+                VALUES (?, ?)
+            ''', (op_id, motivo))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar motivo_parada: {e}")
+
+    def get_record_motivo_parada_by_id(self, record_id):
+        try:
+            self.cursor.execute('SELECT * FROM motivo_parada WHERE id = ?', (record_id,))
+            return self.cursor.fetchone()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar motivo_parada pelo ID: {e}")
+            return None
+
+    def get_records_motivo_parada_by_op_id(self, op_id):
+        try:
+            self.cursor.execute('SELECT * FROM motivo_parada WHERE op_id = ?', (op_id,))
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar registros de motivo_parada pelo op_id: {e}")
+            return []
+
+    def update_record_motivo_parada(self, record_id, motivo):
+        try:
+            self.cursor.execute('''
+                UPDATE motivo_parada
+                SET motivo = ?
+                WHERE id = ?
+            ''', (motivo, record_id))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao atualizar motivo_parada: {e}")
+
+    def delete_record_motivo_parada(self, record_id):
+        try:
+            self.cursor.execute('DELETE FROM motivo_parada WHERE id = ?', (record_id,))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao deletar motivo_parada: {e}")
+
+    def create_record_motivo_finalizacao(self, op_id, motivo):
+        try:
+            self.cursor.execute('''
+                INSERT INTO motivo_finalizacao (op_id, motivo)
+                VALUES (?, ?)
+            ''', (op_id, motivo))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar motivo_finalizacao: {e}")
+
+    def get_record_motivo_finalizacao_by_id(self, record_id):
+        try:
+            self.cursor.execute('SELECT * FROM motivo_finalizacao WHERE id = ?', (record_id,))
+            return self.cursor.fetchone()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar motivo_finalizacao pelo ID: {e}")
+            return None
+
+    def get_records_motivo_finalizacao_by_op_id(self, op_id):
+        try:
+            self.cursor.execute('SELECT * FROM motivo_finalizacao WHERE op_id = ?', (op_id,))
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar registros de motivo_finalizacao pelo op_id: {e}")
+            return []
+
+    def update_record_motivo_finalizacao(self, record_id, motivo):
+        try:
+            self.cursor.execute('''
+                UPDATE motivo_finalizacao
+                SET motivo = ?
+                WHERE id = ?
+            ''', (motivo, record_id))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao atualizar motivo_finalizacao: {e}")
+
+    def delete_record_motivo_finalizacao(self, record_id):
+        try:
+            self.cursor.execute('DELETE FROM motivo_finalizacao WHERE id = ?', (record_id,))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao deletar motivo_finalizacao: {e}")
+
+    def create_record_troca_usuario(self, op_id, usuario_antigo, usuario_novo, timestamp):
+        try:
+            self.cursor.execute('''
+                INSERT INTO troca_usuario (op_id, usuario_antigo, usuario_novo, timestamp)
+                VALUES (?, ?, ?, ?)
+            ''', (op_id, usuario_antigo, usuario_novo, timestamp))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar troca_usuario: {e}")
+
+    def get_record_troca_usuario_by_id(self, record_id):
+        try:
+            self.cursor.execute('SELECT * FROM troca_usuario WHERE id = ?', (record_id,))
+            return self.cursor.fetchone()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar troca_usuario pelo ID: {e}")
+            return None
+
+    def get_records_troca_usuario_by_op_id(self, op_id):
+        try:
+            self.cursor.execute('SELECT * FROM troca_usuario WHERE op_id = ?', (op_id,))
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao buscar registros de troca_usuario pelo op_id: {e}")
+            return []
+
+    def update_record_troca_usuario(self, record_id, usuario_antigo, usuario_novo, timestamp):
+        try:
+            self.cursor.execute('''
+                UPDATE troca_usuario
+                SET usuario_antigo = ?, usuario_novo = ?, timestamp = ?
+                WHERE id = ?
+            ''', (usuario_antigo, usuario_novo, timestamp, record_id))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao atualizar troca_usuario: {e}")
+
+    def delete_record_troca_usuario(self, record_id):
+        try:
+            self.cursor.execute('DELETE FROM troca_usuario WHERE id = ?', (record_id,))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao deletar troca_usuario: {e}")
+    
     def criar_tabela_registro_op(self):
         try:
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS registro_op (

@@ -8,6 +8,8 @@ from Controller.Teclados import AlphanumericKeyboard, NumericKeyboard
 from Model.ViewReceita import TelaViewReceita
 from Controller.Message import SimpleMessageBox, MessageBox
 
+from Model.ExecucaoPrograma import TelaExecucao
+
 class TelaOP(QDialog):
     def __init__(self, dado=None, io=None, db=None, rotina=None):
         super().__init__()
@@ -142,12 +144,6 @@ class TelaOP(QDialog):
         except Exception as e:
             print(f"Erro ao abrir receita direito: {e}")
 
-# Tarefa: Salvar a ordem de produção sem repetir o nome da ordem de produção
-# Quando o usuário clicar no botão OK, o sistema deve verificar se o nome da ordem de produção já existe no banco de dados
-# Se existir, o sistema deve exibir uma mensagem de erro e não salvar a ordem de produção
-# Se não existir, o sistema deve salvar a ordem de produção
-# O sistema deve salvar a ordem de produção para o lado esquerdo e para o lado direito
-# Depois de salvar ou se ja existir, o sistema deve fechar a tela de ordem de produção e abrir a tela de ExecucaoPrograma com os parametros necessarios
     def salvar_op(self):
         receita_peca = self.ui.txMaterialPeca.text()
         login = self.dado.nome_login
@@ -181,6 +177,13 @@ class TelaOP(QDialog):
 
         self.nome_ordem_producao_esquerdo = self.ui.txNomeOP_Esquerdo.text()
         self.nome_ordem_producao_direito = self.ui.txNomeOP_Direito.text()
+
+        execucao_programa = TelaExecucao(dado=self.dado, io=self.io, db=self.database, rotina=self.rotina, nome_receita= receita_peca, 
+                                         nome_ordem_producao_esquerdo=self.nome_ordem_producao_esquerdo, 
+                                         nome_ordem_producao_direito=self.nome_ordem_producao_direito,
+                                         id_esquerdo=self.id_esquerdo, id_direito=self.id_direito)
+        execucao_programa.exec_()
+        self.close()
 
     # A partir desse ponto, o sistema deve fechar a tela de ordem de produção e abrir a tela de ExecucaoPrograma, passando os parametros necessarios
     # A tela de ExecucaoPrograma deve ser reajustada para receber novo banco de dados e novos parametros

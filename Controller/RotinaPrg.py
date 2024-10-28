@@ -51,7 +51,7 @@ class RotinaPrg:
         self.flag_erro_geral = False
         #************************************************************************************
 
-        self.nome_programa = ""
+        self.nome_rotina = ""
         self.url_img_esquerdo = ""
         self.url_img_direito = ""
 

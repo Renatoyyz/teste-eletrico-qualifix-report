@@ -437,3 +437,9 @@
 2024-10-24 11:19:00,439:ERROR:Erro ao atualizar rotina por nome (com data de finalização): Error binding parameter 7 - probably unsupported type.
 2024-10-24 11:20:01,899:ERROR:Erro ao criar registro rotina: Error binding parameter 7 - probably unsupported type.
 2024-10-24 11:20:24,107:ERROR:Erro ao atualizar rotina por nome (com data de finalização): Error binding parameter 7 - probably unsupported type.
+2024-10-28 14:43:13,723:ERROR:Erro ao buscar registro_op pelo ID: no such table: registro_op
+2024-10-28 14:43:13,724:ERROR:Erro ao buscar registro_op pelo ID: no such table: registro_op
+2024-10-28 14:44:04,931:ERROR:Erro ao buscar registro_op pelo ID: no such table: registro_op
+2024-10-28 14:44:04,932:ERROR:Erro ao buscar registro_op pelo ID: no such table: registro_op
+2024-10-28 14:52:31,305:ERROR:Erro ao buscar registro_op pelo ID: no such table: registro_op
+2024-10-28 14:52:31,305:ERROR:Erro ao buscar registro_op pelo ID: no such table: registro_op

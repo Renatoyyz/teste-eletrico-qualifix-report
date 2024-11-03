@@ -268,8 +268,6 @@ class TelaExecucao(QDialog):
 
     def inicializa_conexoes(self):
         self.ui.btVoltar.clicked.connect(self.voltar)
-        self.ui.btDesHabEsquerdo.clicked.connect(self.desabilita_esquerdo)
-        self.ui.btDesHabDireito.clicked.connect(self.desabilita_direito)
         self.ui.btIniciar.clicked.connect(self.inicia_execucao)
         self.ui.btPausar.clicked.connect(self.pausa_execucao)
         self.ui.btFinalizar.clicked.connect(self.para_execucao)
@@ -321,6 +319,15 @@ class TelaExecucao(QDialog):
             # Carrega a quantidade de peças a serem produzidas do lado esquerdo e direito
             self.quantidade_produzir_esquerdo = self.database.get_record_op_by_id(self.id_esquerdo)[2] if self.id_esquerdo else 0
             self.quantidade_produzir_direito = self.database.get_record_op_by_id(self.id_direito)[2] if self.id_direito else 0
+
+            if self.nome_op_esquerdo == None:
+                self.habili_desbilita_esquerdo = False
+            if self.nome_op_direito == None:
+                self.habili_desbilita_direito = False
+
+            # Habilita ou desabilita as imagens
+            self.ui.lbImgEsquerdo.setEnabled(self.habili_desbilita_esquerdo)
+            self.ui.lbImgDireito.setEnabled(self.habili_desbilita_direito)
 
             # Carrega a quantidade de peças produzidas do lado esquerdo e direito
             try:
@@ -912,21 +919,6 @@ class TelaExecucao(QDialog):
 
         self.ui.lbEletrodo8_E.setVisible(False)
         self.ui.lbEletrodo8_E.setParent(self.ui.lbImgEsquerdo) # Seta label para acertar coordenadas
-        
-    def desabilita_esquerdo(self):
-        if self.habili_desbilita_direito == True:
-            self.habili_desbilita_esquerdo = not self.habili_desbilita_esquerdo
-            if self.habili_desbilita_esquerdo == False:
-                self.ui.lbImgEsquerdo.setEnabled(False)
-            else:
-                self.ui.lbImgEsquerdo.setEnabled(True)
-    def desabilita_direito(self):
-        if self.habili_desbilita_esquerdo == True:
-            self.habili_desbilita_direito = not self.habili_desbilita_direito
-            if self.habili_desbilita_direito == False:
-                self.ui.lbImgDireito.setEnabled(False)
-            else:
-                self.ui.lbImgDireito.setEnabled(True)
 
     def inicia_execucao(self):
         if self.execucao_habilita_desabilita == False:
@@ -1011,19 +1003,13 @@ class TelaExecucao(QDialog):
         self.habili_desbilita_direito_old = self.habili_desbilita_direito
 
         if (self.cond_e != [] or self.iso_e != []) and (self.cond_d != [] or self.iso_d != []):# se os dois lados estiverem com problemas
-            self.habili_desbilita_esquerdo = True
             self.ui.lbImgEsquerdo.setEnabled(True)
-            self.habili_desbilita_direito = True
             self.ui.lbImgDireito.setEnabled(True)
         elif self.cond_e != [] or self.iso_e != []:# Se só o lado esquerdo estiver com problemas
-            self.habili_desbilita_esquerdo = True
             self.ui.lbImgEsquerdo.setEnabled(True)
-            self.habili_desbilita_direito = False
             self.ui.lbImgDireito.setEnabled(False)
         elif self.cond_d != [] or self.iso_d != []:# Se só o lado direito estiver com problemas
-            self.habili_desbilita_esquerdo = False
             self.ui.lbImgEsquerdo.setEnabled(False)
-            self.habili_desbilita_direito = True
             self.ui.lbImgDireito.setEnabled(True)
 
 
@@ -1128,8 +1114,6 @@ class TelaExecucao(QDialog):
 
     def _desabilita_botoes(self, hab_dasab):
         # Desabilita ou habilita botões que não podem ser acionados durante programa
-        self.ui.btDesHabEsquerdo.setEnabled(hab_dasab)
-        self.ui.btDesHabDireito.setEnabled(hab_dasab)
         self.ui.btVoltar.setEnabled(hab_dasab)
         self.ui.btContato.setEnabled(hab_dasab)
 

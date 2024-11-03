@@ -24,6 +24,8 @@ class DataBase:
             self.create_table_login()
             self.create_table_receita()
             self.criar_tabela_op()
+            self.criar_tabela_registro_op()
+
             self.criar_tabela_motivo_parada()
             self.criar_tabela_motivo_finalizacao()
             self.criar_tabela_troca_usuario()
@@ -88,6 +90,20 @@ class DataBase:
             self.conn.commit()
         except sqlite3.Error as e:
             logging.error(f"Erro ao criar a tabela rotina: {e}")
+
+    def criar_tabela_registro_op(self):
+        try:
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS registro_op (
+                        id INTEGER PRIMARY KEY,
+                        op_id INTEGER,
+                        peca_aprovada INTEGER,
+                        peca_reprovada INTEGER,
+                        peca_retrabalhada INTEGER,
+                        FOREIGN KEY(op_id) REFERENCES op(id)
+                        )''')
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f"Erro ao criar a tabela registro_op: {e}")
     
     def criar_tabela_motivo_parada(self):
         try:
@@ -95,6 +111,7 @@ class DataBase:
                         id INTEGER PRIMARY KEY,
                         op_id INTEGER,
                         motivo TEXT,
+                        data_parada TIMESTAMP,
                         FOREIGN KEY(op_id) REFERENCES op(id)
                         )''')
             self.conn.commit()
@@ -107,6 +124,7 @@ class DataBase:
                         id INTEGER PRIMARY KEY,
                         op_id INTEGER,
                         motivo TEXT,
+                        data_finalizacao TIMESTAMP,
                         FOREIGN KEY(op_id) REFERENCES op(id)
                         )''')
             self.conn.commit()
@@ -129,10 +147,11 @@ class DataBase:
 
     def create_record_motivo_parada(self, op_id, motivo):
         try:
+            data_parada = datetime.now()
             self.cursor.execute('''
-                INSERT INTO motivo_parada (op_id, motivo)
-                VALUES (?, ?)
-            ''', (op_id, motivo))
+                INSERT INTO motivo_parada (op_id, motivo, data_parada)
+                VALUES (?, ?, ?)
+            ''', (op_id, motivo, data_parada))
             self.conn.commit()
         except sqlite3.Error as e:
             logging.error(f"Erro ao criar motivo_parada: {e}")
@@ -173,10 +192,11 @@ class DataBase:
 
     def create_record_motivo_finalizacao(self, op_id, motivo):
         try:
+            data_finalizacao = datetime.now()
             self.cursor.execute('''
-                INSERT INTO motivo_finalizacao (op_id, motivo)
-                VALUES (?, ?)
-            ''', (op_id, motivo))
+                INSERT INTO motivo_finalizacao (op_id, motivo, data_finalizacao)
+                VALUES (?, ?, ?)
+            ''', (op_id, motivo, data_finalizacao))
             self.conn.commit()
         except sqlite3.Error as e:
             logging.error(f"Erro ao criar motivo_finalizacao: {e}")
@@ -215,8 +235,9 @@ class DataBase:
         except sqlite3.Error as e:
             logging.error(f"Erro ao deletar motivo_finalizacao: {e}")
 
-    def create_record_troca_usuario(self, op_id, usuario_antigo, usuario_novo, timestamp):
+    def create_record_troca_usuario(self, op_id, usuario_antigo, usuario_novo):
         try:
+            timestamp = datetime.now()
             self.cursor.execute('''
                 INSERT INTO troca_usuario (op_id, usuario_antigo, usuario_novo, timestamp)
                 VALUES (?, ?, ?, ?)
@@ -241,8 +262,9 @@ class DataBase:
             logging.error(f"Erro ao buscar registros de troca_usuario pelo op_id: {e}")
             return []
 
-    def update_record_troca_usuario(self, record_id, usuario_antigo, usuario_novo, timestamp):
+    def update_record_troca_usuario(self, record_id, usuario_antigo, usuario_novo):
         try:
+            timestamp = datetime.now()
             self.cursor.execute('''
                 UPDATE troca_usuario
                 SET usuario_antigo = ?, usuario_novo = ?, timestamp = ?
@@ -258,20 +280,6 @@ class DataBase:
             self.conn.commit()
         except sqlite3.Error as e:
             logging.error(f"Erro ao deletar troca_usuario: {e}")
-    
-    def criar_tabela_registro_op(self):
-        try:
-            self.cursor.execute('''CREATE TABLE IF NOT EXISTS registro_op (
-                        id INTEGER PRIMARY KEY,
-                        op_id INTEGER,
-                        peca_aprovada INTEGER,
-                        peca_reprovada INTEGER,
-                        peca_retrabalhada INTEGER,
-                        FOREIGN KEY(op_id) REFERENCES op(id)
-                        )''')
-            self.conn.commit()
-        except sqlite3.Error as e:
-            logging.error(f"Erro ao criar a tabela registro_op: {e}")
 
     def create_record_registro_op(self, op_id, peca_aprovada, peca_reprovada, peca_retrabalhada):
         try:

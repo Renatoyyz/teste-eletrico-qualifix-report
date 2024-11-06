@@ -203,8 +203,6 @@ class TelaExecucao(QDialog):
     def inicializa_estados(self):
         self.habili_desbilita_esquerdo = True
         self.habili_desbilita_direito = True
-        self.habili_desbilita_esquerdo_old = True
-        self.habili_desbilita_direito_old = True
         self.execucao_habilita_desabilita = False
         self.em_execucao = False
         self._nao_passsou_peca = False
@@ -331,23 +329,31 @@ class TelaExecucao(QDialog):
 
             # Carrega a quantidade de peças produzidas do lado esquerdo e direito
             try:
-                self.quantidade_produzida_esquerdo = sum(
-                    [self.database.get_record_registro_op_by_id(record_id)[2] + 
-                     self.database.get_record_registro_op_by_id(record_id)[3] + 
-                     self.database.get_record_registro_op_by_id(record_id)[4] 
-                     for record_id in [self.id_esquerdo] if record_id]
-                )
+                reg = self.database.get_records_registro_op_by_op_id(self.id_esquerdo)
+                
+                self._cnt_peca_passou_e = max(reg, key=lambda x: x[2])[2] if reg else 0
+                self._cnt_peca_reprovou_e = max(reg, key=lambda x: x[3])[3] if reg else 0
+                self._cnt_peca_retrabalho_e = max(reg, key=lambda x: x[4])[4] if reg else 0
+    
+                self.quantidade_produzida_esquerdo = self._cnt_peca_passou_e + self._cnt_peca_reprovou_e + self._cnt_peca_retrabalho_e
             except:
+                self._cnt_peca_passou_e = 0
+                self._cnt_peca_reprovou_e = 0
+                self._cnt_peca_retrabalho_e = 0
                 self.quantidade_produzida_esquerdo = 0
 
             try:
-                self.quantidade_produzida_direito = sum(
-                    [self.database.get_record_registro_op_by_id(record_id)[2] + 
-                     self.database.get_record_registro_op_by_id(record_id)[3] + 
-                     self.database.get_record_registro_op_by_id(record_id)[4] 
-                     for record_id in [self.id_direito] if record_id]
-                )
+                reg = self.database.get_records_registro_op_by_op_id(self.id_direito)
+
+                self._cnt_peca_passou_d = max(reg, key=lambda x: x[2])[2] if reg else 0
+                self._cnt_peca_reprovou_d = max(reg, key=lambda x: x[3])[3] if reg else 0
+                self._cnt_peca_retrabalho_d = max(reg, key=lambda x: x[4])[4] if reg else 0
+
+                self.quantidade_produzida_direito = self._cnt_peca_passou_d + self._cnt_peca_reprovou_d + self._cnt_peca_retrabalho_d
             except:
+                self._cnt_peca_passou_d = 0
+                self._cnt_peca_reprovou_d = 0
+                self._cnt_peca_retrabalho_d = 0
                 self.quantidade_produzida_direito = 0
 
             # Carrega as duas imagens
@@ -366,6 +372,13 @@ class TelaExecucao(QDialog):
 
             self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
             self.atualiza_producao_label("D", self.quantidade_produzida_direito, self.quantidade_produzir_direito)
+
+            self.muda_texto_obj("txAprovadoE", self._cnt_peca_passou_e)
+            self.muda_texto_obj("txReprovadoE", self._cnt_peca_reprovou_e)
+            self.muda_texto_obj("txRetrabalhoE", self._cnt_peca_retrabalho_e)
+            self.muda_texto_obj("txAprovadoD", self._cnt_peca_passou_d)
+            self.muda_texto_obj("txReprovadoD", self._cnt_peca_reprovou_d)
+            self.muda_texto_obj("txRetrabalhoD", self._cnt_peca_retrabalho_d)
 
             #Limpa os eletrodos
             self.limpaeletrodo()
@@ -643,11 +656,8 @@ class TelaExecucao(QDialog):
                 if self.habili_desbilita_direito == True and self.habili_desbilita_esquerdo == True:# Se ambos os lados estiverem habilitados
                     if cond_e_ != [] and iso_e_ != [] and cond_d_ != [] and iso_d_ != []:
                         if self._verifica_condutividade_isolacao(cond_e_, iso_e_) == (True,True) and self._verifica_condutividade_isolacao(cond_d_, iso_d_) == (True,True):
-                            self._carrega_peca_passou(0)
-                            #escrever aqui o liga verde da torre
-
+                            self._carrega_peca_passou(0)# passou os dois lados
                         else:# Verifica qual dos dois não passaram
-
                             if self._verifica_condutividade_isolacao(cond_e_, iso_e_) == (True,True):
                                 self._carrega_peca_passou(1)# passou a esquerda habilitada
                             else:
@@ -669,17 +679,12 @@ class TelaExecucao(QDialog):
                                     if i[2] == 1:
                                         self.iso_d.append(i)
                             self.pausa_execucao()
-                            # self.msg.exec(msg="Favor apertar iniciar para ter acesso a peça.")
-
                             self._nao_passsou_peca = True
-
-                            #escrever aqui o liga Vermelho da torre
 
                 elif self.habili_desbilita_direito == False and self.habili_desbilita_esquerdo == True:# Se só esquerdo estiver habilitado
                     if cond_e_ != [] and iso_e_ != []:
                         if self._verifica_condutividade_isolacao(cond_e_, iso_e_) == (True,True):
-                            self._carrega_peca_passou(1)
-                            #escrever aqui o liga verde da torre
+                            self._carrega_peca_passou(1)# passou só a esquerda habilitada
                         else:
                             # passa para as variáveis somente o que não passou 
                             for i in cond_e_:
@@ -690,14 +695,11 @@ class TelaExecucao(QDialog):
                                     self.iso_e.append(i)
                             self._nao_passsou_peca = True
                             self.pausa_execucao()
-                            # self.msg.exec(msg="Favor apertar iniciar para ter acesso a peça.")
-                            #escrever aqui o liga vermelha da torre
 
                 elif self.habili_desbilita_direito == True and self.habili_desbilita_esquerdo == False:# Se só direito estiver habilitado
                     if cond_d_ != [] and iso_d_ != []:
                         if self._verifica_condutividade_isolacao(cond_d_, iso_d_) == (True,True):
-                            self._carrega_peca_passou(2)
-                            #escrever aqui o liga verde da torre
+                            self._carrega_peca_passou(2)# passou só a direita habilitada
                         else:
                             # passa para as variáveis somente o que não passou
                             for i in cond_d_:
@@ -708,8 +710,6 @@ class TelaExecucao(QDialog):
                                     self.iso_d.append(i)
                             self._nao_passsou_peca = True
                             self.pausa_execucao()
-                            # self.msg.exec(msg="Favor apertar iniciar para ter acesso a peça.")
-                            #escrever aqui o liga vermelho da torre
             self._cnt_acionamento_botao=0
         except Exception as e:  
             logging.error(f"Erro na execução: {e}")
@@ -718,7 +718,7 @@ class TelaExecucao(QDialog):
     #               1 : Passou só a esquerda habilitada
     #               2 : Passou só a direita habilitada
     def _carrega_peca_passou(self, qual_passou):
-            if qual_passou == 0:
+            if qual_passou == 0: # Se passou as duas peças
                 if self._retrabalho == False:# Se não for um retrabalho 
                     self._cnt_peca_passou_e += 1
                     self._cnt_peca_passou_d += 1
@@ -727,9 +727,6 @@ class TelaExecucao(QDialog):
                     
                 else:
                     self._retrabalho = False # Para a próxima vez não ser um retrabalho de novo
-                    #recupera valor antigo de direito e esquerdo
-                    self.habili_desbilita_esquerdo = self.habili_desbilita_esquerdo_old
-                    self.habili_desbilita_direito = self.habili_desbilita_direito_old
                     
                     if self.habili_desbilita_esquerdo == False:
                         self.ui.lbImgEsquerdo.setEnabled(False)
@@ -746,20 +743,22 @@ class TelaExecucao(QDialog):
                     self.ui.txRetrabalhoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_e}"))
                     self.ui.txRetrabalhoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_d}"))
 
+                self.quantidade_produzida_esquerdo+=1
+                self.quantidade_produzida_direito+=1
+                self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
+                self.atualiza_producao_label("D", self.quantidade_produzida_direito, self.quantidade_produzir_direito)
+
                 self._carrega_eletrodos(self.rotina.coord_eletrodo_esquerdo, "E")
                 self._carrega_eletrodos(self.rotina.coord_eletrodo_direito, "D")
                 self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
                 self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
                 
-            elif qual_passou == 1:
+            elif qual_passou == 1: # Se passou só a esquerda habilitada
                 if self._retrabalho == False:# Se não for um retralho 
                     self._cnt_peca_passou_e += 1
                     self.ui.txAprovadoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_passou_e}"))
                 else:
                     self._retrabalho = False # Para a próxima vez não ser um retrabalho de novo
-                    #recupera valor antigo de direito e esquerdo
-                    self.habili_desbilita_esquerdo = self.habili_desbilita_esquerdo_old
-                    self.habili_desbilita_direito = self.habili_desbilita_direito_old
                     
                     if self.habili_desbilita_esquerdo == False:
                         self.ui.lbImgEsquerdo.setEnabled(False)
@@ -775,19 +774,19 @@ class TelaExecucao(QDialog):
                     self._cnt_peca_retrabalho_e+=1
                     self.ui.txRetrabalhoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_e}"))
 
+                self.quantidade_produzida_esquerdo+=1
+                self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
+
                 self._carrega_eletrodos(self.rotina.coord_eletrodo_esquerdo, "E")
                 self._carrega_eletrodos(self.rotina.coord_eletrodo_direito, "D")
                 self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
                 self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
-            elif qual_passou == 2:
+            elif qual_passou == 2: # Se passou só a direita habilitada
                 if self._retrabalho == False:# Se não for um retralho 
                     self._cnt_peca_passou_d += 1
                     self.ui.txAprovadoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_passou_d}"))
                 else:
                     self._retrabalho = False # Para a próxima vez não ser um retrabalho de novo
-                    #recupera valor antigo de direito e esquerdo
-                    self.habili_desbilita_esquerdo = self.habili_desbilita_esquerdo_old
-                    self.habili_desbilita_direito = self.habili_desbilita_direito_old
                     
                     if self.habili_desbilita_esquerdo == False:
                         self.ui.lbImgEsquerdo.setEnabled(False)
@@ -801,6 +800,9 @@ class TelaExecucao(QDialog):
 
                     self._cnt_peca_retrabalho_d+=1
                     self.ui.txRetrabalhoD.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_d}"))
+
+                self.quantidade_produzida_direito+=1
+                self.atualiza_producao_label("D", self.quantidade_produzida_direito, self.quantidade_produzir_direito)
 
                 self._carrega_eletrodos(self.rotina.coord_eletrodo_esquerdo, "E")
                 self._carrega_eletrodos(self.rotina.coord_eletrodo_direito, "D")
@@ -944,7 +946,7 @@ class TelaExecucao(QDialog):
     def para_execucao(self):
         self.msg_box.exec(msg="Deseja realmente encerar rotina?")
         if self.msg_box.yes_no == True:
-            self.salva_rotina(finalizado=True)
+            self.salva_rotina()
             self._nao_passsou_peca = False# Flag de peça não passo habilitada para novo teste
             self._desabilita_botoes(False)
             self.ui.lbAvisos.setVisible(True)
@@ -997,10 +999,6 @@ class TelaExecucao(QDialog):
         self.esquerda_iso_ok = 0
         self.direita_condu_ok = 0
         self.direita_iso_ok = 0
-
-        # Guarda o valor antigo de direito e esquerdo
-        self.habili_desbilita_esquerdo_old = self.habili_desbilita_esquerdo
-        self.habili_desbilita_direito_old = self.habili_desbilita_direito
 
         if (self.cond_e != [] or self.iso_e != []) and (self.cond_d != [] or self.iso_d != []):# se os dois lados estiverem com problemas
             self.ui.lbImgEsquerdo.setEnabled(True)
@@ -1117,56 +1115,14 @@ class TelaExecucao(QDialog):
         self.ui.btVoltar.setEnabled(hab_dasab)
         self.ui.btContato.setEnabled(hab_dasab)
 
-    def salva_rotina(self, finalizado=False):
-        pass
-        # try:
-        #     if finalizado == False:
-
-        #         if self.rotina_iniciada == False:# Se for a primeira vez
-        #             self.rotina_iniciada = True # Sinaliza variável que indica que já foi gravado
-        #             self.database.create_record_rotina(self._nome_rotina_execucao,
-        #                                             int(self.ui.txAprovadoE.text()),
-        #                                             int(self.ui.txAprovadoD.text()),
-        #                                             int(self.ui.txReprovadoE.text()),
-        #                                             int(self.ui.txReprovadoD.text()),
-        #                                             int(self.ui.txRetrabalhoE.text()),
-        #                                             int(self.ui.txRetrabalhoD.text()),
-        #                                             QDateTime.currentDateTime(),
-        #                                             QDateTime.currentDateTime(),
-        #                                             self.dado.nome_login,
-        #                                             0,# Zero indica que não terminou rotina
-        #                                             int(self.ui.txNumerosCiclos.text())
-        #                                             )
-        #         else:
-        #             self.database.update_record_rotina_by_name_sem_data(self._nome_rotina_execucao,
-        #                                                                 self._nome_rotina_execucao,
-        #                                                                 int(self.ui.txAprovadoE.text()),
-        #                                                                 int(self.ui.txAprovadoD.text()),
-        #                                                                 int(self.ui.txReprovadoE.text()),
-        #                                                                 int(self.ui.txReprovadoD.text()),
-        #                                                                 int(self.ui.txRetrabalhoE.text()),
-        #                                                                 int(self.ui.txRetrabalhoD.text()),
-        #                                                                 self.dado.nome_login,
-        #                                                                 0,# Zero indica que não terminou rotina
-        #                                                                 int(self.ui.txNumerosCiclos.text())
-        #                                                             )
-        #     else:
-        #         self.database.update_record_rotina_by_name_finalizado(self._nome_rotina_execucao,
-        #                                                                 self._nome_rotina_execucao,
-        #                                                                 int(self.ui.txAprovadoE.text()),
-        #                                                                 int(self.ui.txAprovadoD.text()),
-        #                                                                 int(self.ui.txReprovadoE.text()),
-        #                                                                 int(self.ui.txReprovadoD.text()),
-        #                                                                 int(self.ui.txRetrabalhoE.text()),
-        #                                                                 int(self.ui.txRetrabalhoD.text()),
-        #                                                                 QDateTime.currentDateTime(),#Data de finalização
-        #                                                                 self.dado.nome_login,
-        #                                                                 1,# Um indica terminou rotina
-        #                                                                 int(self.ui.txNumerosCiclos.text())
-        #                                                             )
-        # except:
-        #     print("Erro em salvar_rotina(), banco de dados")
-
+    def salva_rotina(self):
+        try:
+            if self.habili_desbilita_esquerdo == True:
+                self.database.create_record_registro_op(self.id_esquerdo, self._cnt_peca_passou_e, self._cnt_peca_reprovou_e, self._cnt_peca_retrabalho_e)
+            if self.habili_desbilita_direito == True:
+                self.database.create_record_registro_op(self.id_direito, self._cnt_peca_passou_d, self._cnt_peca_reprovou_d, self._cnt_peca_retrabalho_d)
+        except Exception as e:
+            logging.error(f"Erro ao salvar rotina: {e}")
 
     def voltar(self):
         self.dado.set_telas(self.dado.TELA_INICIAL)

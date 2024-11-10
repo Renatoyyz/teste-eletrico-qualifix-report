@@ -440,8 +440,6 @@ class TelaExecucao(QDialog):
             # if self.execucao_habilita_desabilita == True and  self.io.io_rpi.bot_acio_e == 0 and self.io.io_rpi.bot_acio_d == 0 and (self._nao_passsou_peca_esquerdo and self._nao_passsou_peca_direito) == False:
                 self.rotina.apaga_torre()
                 if self._cnt_acionamento_botao < 1:
-                    # self.execucao_._running = True
-                    # self.execucao_.iniciar()
                     self.rotina.flag_erro_geral = False
                     self._nao_passsou_peca_esquerdo = False
                     self._nao_passsou_peca_direito = False
@@ -749,16 +747,16 @@ class TelaExecucao(QDialog):
                 if self._retrabalho_esquerdo == False:# Se não for um retrabalho 
                     self._cnt_peca_passou_e += 1
                     self.ui.txAprovadoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_passou_e}"))
-                elif self._retrabalho_direito == False:
+                if self._retrabalho_direito == False:
                     self._cnt_peca_passou_d += 1
                     self.ui.txAprovadoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_passou_d}"))
 
-                elif self._retrabalho_esquerdo == True:
+                if self._retrabalho_esquerdo == True:
                     self._retrabalho_esquerdo = False # Para a próxima vez não ser um retrabalho de novo
                     self._cnt_peca_retrabalho_e+=1
                     self.ui.txRetrabalhoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_e}"))
 
-                elif self._retrabalho_direito == True:
+                if self._retrabalho_direito == True:
                     self._retrabalho_direito = False
                     self._cnt_peca_retrabalho_d+=1
                     self.ui.txRetrabalhoD.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_d}"))
@@ -967,7 +965,6 @@ class TelaExecucao(QDialog):
     def para_execucao(self):
         self.msg_box.exec(msg="Deseja realmente encerar rotina?")
         if self.msg_box.yes_no == True:
-            # self.salva_rotina()
             self._nao_passsou_peca_esquerdo = False# Flag de peça não passo habilitada para novo teste
             self._nao_passsou_peca_direito = False
             self._desabilita_botoes(False)
@@ -1094,7 +1091,7 @@ class TelaExecucao(QDialog):
             self.ui.txReprovadoE.setText(f"{self._cnt_peca_reprovou_e}")
             self.quantidade_produzida_esquerdo+=1
             self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
-        self.salva_rotina()
+        self.salva_rotina_esquerdo()
 
     def botao_descarte_direito(self):
         self._nao_passsou_peca_direito = False
@@ -1122,7 +1119,7 @@ class TelaExecucao(QDialog):
             self.ui.txReprovadoD.setText(f"{self._cnt_peca_reprovou_d}")
             self.quantidade_produzida_direito+=1
             self.atualiza_producao_label("D", self.quantidade_produzida_direito, self.quantidade_produzir_direito)
-        self.salva_rotina()
+        self.salva_rotina_direito()
 
     def img_esquerda_clicada(self, event):
         self._cnt_pagina_erro+=1
@@ -1195,6 +1192,32 @@ class TelaExecucao(QDialog):
                 self.database.create_record_registro_op(self.id_direito, self._cnt_peca_passou_d, self._cnt_peca_reprovou_d, self._cnt_peca_retrabalho_d)
         except Exception as e:
             logging.error(f"Erro ao salvar rotina: {e}")
+
+        if self.habili_desbilita_esquerdo == True and self.habili_desbilita_direito == True:
+            if (self.quantidade_produzida_esquerdo == self.quantidade_produzir_esquerdo) and (self.quantidade_produzida_direito == self.quantidade_produzir_direito):
+                self.msg.exec(f"Os lados esquerdo e direito atingiram a quantidade de peças a serem produzidas.\nEsquerdo: produzidos {self.quantidade_produzida_esquerdo} de {self.quantidade_produzir_esquerdo}.\nDireito: produzidos {self.quantidade_produzida_direito} de {self.quantidade_produzir_direito}.")
+
+    def salva_rotina_esquerdo(self):
+        try:
+            if self.habili_desbilita_esquerdo == True:
+                self.database.create_record_registro_op(self.id_esquerdo, self._cnt_peca_passou_e, self._cnt_peca_reprovou_e, self._cnt_peca_retrabalho_e)
+        except Exception as e:
+            logging.error(f"Erro ao salvar rotina esquerdo: {e}")
+
+        if self.habili_desbilita_esquerdo == True:
+            if self.quantidade_produzida_esquerdo == self.quantidade_produzir_esquerdo:
+                self.msg.exec(f"O lado esquerdo atingiu a quantidade de peças a serem produzidas.\nProduzidos {self.quantidade_produzida_esquerdo} de {self.quantidade_produzir_esquerdo}.")     
+
+    def salva_rotina_direito(self):
+        try:
+            if self.habili_desbilita_direito == True:
+                self.database.create_record_registro_op(self.id_direito, self._cnt_peca_passou_d, self._cnt_peca_reprovou_d, self._cnt_peca_retrabalho_d)
+        except Exception as e:
+            logging.error(f"Erro ao salvar rotina direito: {e}")
+
+        if self.habili_desbilita_direito == True:
+            if self.quantidade_produzida_direito == self.quantidade_produzir_direito:
+                self.msg.exec(f"O lado direito atingiu a quantidade de peças a serem produzidas.\nProduzidos {self.quantidade_produzida_direito} de {self.quantidade_produzir_direito}.")
 
     def salva_motivo_parada(self, motivo):
         try:

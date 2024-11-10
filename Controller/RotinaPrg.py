@@ -29,8 +29,8 @@ class RotinaPrg:
 
         self.TEMPO_DESCIDA_PISTAO = 1500
         self.TEMPO_SUBIDA_PISTAO = 100
-        self.TEMPO_ACIONAMENTO_RELE = 25
-        self.TEMPO_ACIONAMENTO_RELE_ISO = 100
+        self.TEMPO_ACIONAMENTO_RELE = 250
+        self.TEMPO_ACIONAMENTO_RELE_ISO = 250
 
         self.dado=dado
         self.io=io

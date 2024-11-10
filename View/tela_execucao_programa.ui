@@ -13,24 +13,6 @@
   <property name="windowTitle">
    <string>TelaCriaReceita</string>
   </property>
-  <widget class="QPushButton" name="btVoltar">
-   <property name="geometry">
-    <rect>
-     <x>880</x>
-     <y>730</y>
-     <width>140</width>
-     <height>40</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>18</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>VOLTAR</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="lbImgEsquerdo">
    <property name="geometry">
     <rect>
@@ -79,7 +61,7 @@
   <widget class="QPushButton" name="btFinalizar">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>582</x>
      <y>730</y>
      <width>140</width>
      <height>40</height>
@@ -97,7 +79,7 @@
   <widget class="QPushButton" name="btPausar">
    <property name="geometry">
     <rect>
-     <x>360</x>
+     <x>445</x>
      <y>730</y>
      <width>140</width>
      <height>40</height>
@@ -115,9 +97,9 @@
   <widget class="QPushButton" name="btIniciar">
    <property name="geometry">
     <rect>
-     <x>0</x>
+     <x>331</x>
      <y>730</y>
-     <width>140</width>
+     <width>120</width>
      <height>40</height>
     </rect>
    </property>
@@ -793,30 +775,30 @@
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Avisos&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="btRetrabalhar">
+  <widget class="QPushButton" name="btRetrabalharEsquerdo">
    <property name="geometry">
     <rect>
-     <x>432</x>
-     <y>640</y>
-     <width>160</width>
+     <x>-4</x>
+     <y>730</y>
+     <width>140</width>
      <height>40</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>16</pointsize>
+     <pointsize>14</pointsize>
     </font>
    </property>
    <property name="text">
     <string>RETRABALHAR</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="btDescartar">
+  <widget class="QPushButton" name="btDescartarEsquerdo">
    <property name="geometry">
     <rect>
-     <x>432</x>
-     <y>593</y>
-     <width>160</width>
+     <x>128</x>
+     <y>730</y>
+     <width>130</width>
      <height>40</height>
     </rect>
    </property>
@@ -879,6 +861,42 @@
    </property>
    <property name="text">
     <string>XXXX de XXXX</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btRetrabalharDireito">
+   <property name="geometry">
+    <rect>
+     <x>887</x>
+     <y>730</y>
+     <width>140</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>RETRABALHAR</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btDescartarDireito">
+   <property name="geometry">
+    <rect>
+     <x>765</x>
+     <y>730</y>
+     <width>130</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>18</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>DESCARTAR</string>
    </property>
   </widget>
  </widget>

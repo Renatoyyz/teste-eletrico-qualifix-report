@@ -43,7 +43,7 @@
    <property name="title">
     <string>Escolha um motivo para a pausa</string>
    </property>
-   <widget class="QRadioButton" name="radioButton">
+   <widget class="QRadioButton" name="rbtDescanso">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -61,7 +61,7 @@
      <string>Descanso</string>
     </property>
    </widget>
-   <widget class="QRadioButton" name="radioButton_2">
+   <widget class="QRadioButton" name="rbtTrocaTurno">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -79,7 +79,7 @@
      <string>Troca de turno</string>
     </property>
    </widget>
-   <widget class="QRadioButton" name="radioButton_3">
+   <widget class="QRadioButton" name="rbtHoraAlmoco">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -97,7 +97,7 @@
      <string>Hora de Almoço</string>
     </property>
    </widget>
-   <widget class="QRadioButton" name="radioButton_4">
+   <widget class="QRadioButton" name="rbtFinalExpediente">
     <property name="geometry">
      <rect>
       <x>40</x>

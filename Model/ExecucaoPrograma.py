@@ -4,6 +4,7 @@ from datetime import datetime
 from Controller.Message import MessageBox, SimpleMessageBox
 from Controller.OpenFile import OpenFile
 from View.tela_execucao_programa import Ui_TelaExecucao
+from Model.MotivoPausa import MotivoPausa
 
 import logging
 
@@ -205,7 +206,8 @@ class TelaExecucao(QDialog):
         self.habili_desbilita_direito = True
         self.execucao_habilita_desabilita = False
         self.em_execucao = False
-        self._nao_passsou_peca = False
+        self._nao_passsou_peca_esquerdo = False
+        self._nao_passsou_peca_direito = False
         self.esquerda_condu_ok = 0
         self.esquerda_iso_ok = 0
         self.direita_condu_ok = 0
@@ -243,7 +245,8 @@ class TelaExecucao(QDialog):
         self.TESTE_ISO_D = 4
         self.qual_teste = self.SEM_TESTE
         self._ofset_temo = 0
-        self._retrabalho = False
+        self._retrabalho_esquerdo = False
+        self._retrabalho_direito = False
         self.rotina_iniciada = False
         self._visualiza_condu_e = False
         self._visualiza_condu_d = False
@@ -265,12 +268,13 @@ class TelaExecucao(QDialog):
             self.setWindowState(Qt.WindowState.WindowFullScreen)
 
     def inicializa_conexoes(self):
-        self.ui.btVoltar.clicked.connect(self.voltar)
         self.ui.btIniciar.clicked.connect(self.inicia_execucao)
         self.ui.btPausar.clicked.connect(self.pausa_execucao)
         self.ui.btFinalizar.clicked.connect(self.para_execucao)
-        self.ui.btRetrabalhar.clicked.connect(self.botao_retrabalho)
-        self.ui.btDescartar.clicked.connect(self.botao_descarte)
+        self.ui.btRetrabalharEsquerdo.clicked.connect(self.botao_retrabalho_esquerdo)
+        self.ui.btRetrabalharDireito.clicked.connect(self.botao_retrabalho_direito)
+        self.ui.btDescartarEsquerdo.clicked.connect(self.botao_descarte_esquerdo)
+        self.ui.btDescartarDireito.clicked.connect(self.botao_descarte_direito)
         self.ui.lbImgEsquerdo.mousePressEvent = self.img_esquerda_clicada
         self.ui.lbImgDireito.mousePressEvent = self.img_direita_clicada
         self.ui.lbContinuIndicaE.mousePressEvent = self.select_visu_cond_e
@@ -304,8 +308,10 @@ class TelaExecucao(QDialog):
         self.muda_cor_obj("lbIsolaIndicaE",self.CINZA)
         self.muda_cor_obj("lbIsolaIndicaD",self.CINZA)
 
-        self.ui.btRetrabalhar.setDisabled(True)
-        self.ui.btDescartar.setDisabled(True)
+        self.ui.btRetrabalharEsquerdo.setDisabled(True)
+        self.ui.btRetrabalharDireito.setDisabled(True)
+        self.ui.btDescartarEsquerdo.setDisabled(True)
+        self.ui.btDescartarDireito.setDisabled(True)
         self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina parada</p></body></html>"))
         self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
         try:
@@ -420,14 +426,15 @@ class TelaExecucao(QDialog):
         try:
             self.ui.lbDataHora.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">{data_hora}</p></body></html>"))
 
-            if self.execucao_habilita_desabilita == True  and self._nao_passsou_peca == False:
-            # if self.execucao_habilita_desabilita == True and  self.io.io_rpi.bot_acio_e == 0 and self.io.io_rpi.bot_acio_d == 0 and self._nao_passsou_peca == False:
+            if self.execucao_habilita_desabilita == True  and (self._nao_passsou_peca_esquerdo and self._nao_passsou_peca_direito) == False:
+            # if self.execucao_habilita_desabilita == True and  self.io.io_rpi.bot_acio_e == 0 and self.io.io_rpi.bot_acio_d == 0 and (self._nao_passsou_peca_esquerdo and self._nao_passsou_peca_direito) == False:
                 self.rotina.apaga_torre()
                 if self._cnt_acionamento_botao < 1:
                     # self.execucao_._running = True
                     # self.execucao_.iniciar()
                     self.rotina.flag_erro_geral = False
-                    self._nao_passsou_peca = False
+                    self._nao_passsou_peca_esquerdo = False
+                    self._nao_passsou_peca_direito = False
                     self.em_execucao = True
                     self.tempo_ciclo = 0
                     self.oscila_cor = False
@@ -446,46 +453,45 @@ class TelaExecucao(QDialog):
                     self.direita_condu_ok = 0
                     self.direita_iso_ok = 0
                 
-            if self.em_execucao == True and self._nao_passsou_peca == False:# Se está em execução e peça passou
+            if self.em_execucao == True and self._nao_passsou_peca_esquerdo == False:# Se está em execução e peça esquerda passou
 
                 if self.qual_teste == self.SEM_TESTE:
                     self.indica_cor_teste_condu("lbContinuIndicaE",self.CINZA, 0)
-                    self.indica_cor_teste_condu("lbContinuIndicaD",self.CINZA, 1)
                     self.indica_cor_teste_iso("lbIsolaIndicaE",self.CINZA, 0)
-                    self.indica_cor_teste_iso("lbIsolaIndicaD",self.CINZA, 1)
                 elif self.qual_teste == self.TESTE_COND_E:
                     self.indica_cor_teste_condu("lbContinuIndicaE",self.VERDE, 0)
-                    self.indica_cor_teste_condu("lbContinuIndicaD",self.CINZA, 1)
                     self.indica_cor_teste_iso("lbIsolaIndicaE",self.CINZA, 0)
-                    self.indica_cor_teste_iso("lbIsolaIndicaD",self.CINZA, 1)
-                elif self.qual_teste == self.TESTE_COND_D:
-                    self.indica_cor_teste_condu("lbContinuIndicaE",self.CINZA, 0)
-                    self.indica_cor_teste_condu("lbContinuIndicaD",self.VERDE, 1)
-                    self.indica_cor_teste_iso("lbIsolaIndicaE",self.CINZA, 0)
-                    self.indica_cor_teste_iso("lbIsolaIndicaD",self.CINZA, 1)
                 elif self.qual_teste == self.TESTE_ISO_E:
                     self.indica_cor_teste_condu("lbContinuIndicaE",self.CINZA, 0)
-                    self.indica_cor_teste_condu("lbContinuIndicaD",self.CINZA, 1)
                     self.indica_cor_teste_iso("lbIsolaIndicaE",self.VERDE, 0)
+                
+                self.cor_eletrodo_esquerdo_teste()
+            if self.em_execucao == True and self._nao_passsou_peca_direito == False:# Se está em execução e peça direita passou
+
+                if self.qual_teste == self.SEM_TESTE:
+                    self.indica_cor_teste_condu("lbContinuIndicaD",self.CINZA, 1)
+                    self.indica_cor_teste_iso("lbIsolaIndicaD",self.CINZA, 1)
+                elif self.qual_teste == self.TESTE_COND_D:
+                    self.indica_cor_teste_condu("lbContinuIndicaD",self.VERDE, 1)
                     self.indica_cor_teste_iso("lbIsolaIndicaD",self.CINZA, 1)
                 elif self.qual_teste == self.TESTE_ISO_D:
-                    self.indica_cor_teste_condu("lbContinuIndicaE",self.CINZA, 0)
                     self.indica_cor_teste_condu("lbContinuIndicaD",self.CINZA, 1)
-                    self.indica_cor_teste_iso("lbIsolaIndicaE",self.CINZA, 0)
                     self.indica_cor_teste_iso("lbIsolaIndicaD",self.VERDE, 1)
-                
-                self.cor_eletrodo_teste()
 
-                # A Thread AtualizaValor atualiza de x em x ms
-                # para que a indicação de tempo atualiza de 1 em 1 s, aplica-se o algoritimo de resto = 0
+                self.cor_eletrodo_direito_teste()
+
+            # A Thread AtualizaValor atualiza de x em x ms
+            # para que a indicação de tempo atualiza de 1 em 1 s, aplica-se o algoritimo de resto = 0
+            if self.em_execucao == True:
                 self._ofset_temo += 1
                 if (self._ofset_temo % 5) == 0:
                     self.tempo_ciclo += 1
                     self.ui.txTempoCiclos.setText(f"{self.tempo_ciclo} s")
-            elif self.em_execucao == False and self._nao_passsou_peca == True:# Se está em execução e peça não passou
+                    self._ofset_temo = 0
+            if self.em_execucao == False and self._nao_passsou_peca_esquerdo == True:# Se está em execução e peça esquerda não passou
                 # Habilita botão de descarte ou retrabalho
-                self.ui.btDescartar.setDisabled(False)
-                self.ui.btRetrabalhar.setDisabled(False)
+                self.ui.btDescartarEsquerdo.setDisabled(False)
+                self.ui.btRetrabalharEsquerdo.setDisabled(False)
 
 
                 if self._visualiza_condu_e == False and self._visualiza_condu_d == False and self._visualiza_iso_e == False and self._visualiza_iso_d == False:
@@ -507,21 +513,6 @@ class TelaExecucao(QDialog):
                             self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Não há erros de condutividade nessa peça</p></body></html>"))
                             self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
 
-
-                    if self._visualiza_condu_d == True:
-                        if self._cnt_pagina_erro > len(self.cond_d)-1:
-                            self._cnt_pagina_erro=0
-                        
-
-                        if self.habili_desbilita_direito == True and self.cond_d != []:
-                            self._carrega_eletrodos_direito(self.rotina.coord_eletrodo_direito,self.rotina.condutividade_direito[f"ligacao{self.cond_d[self._cnt_pagina_erro][0]}"][1][0] , -1)
-                            self.muda_cor_obj(f"lbEletrodo{self.rotina.condutividade_direito[f'ligacao{self.cond_d[self._cnt_pagina_erro][0]}'][1][0]}_D",self.VERMELHO)
-                            self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Condutor: {self.cond_d[self._cnt_pagina_erro][1]}</p></body></html>"))
-                            self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERMELHO});")
-                        else:
-                            self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Não há erros de condutividade nessa peça</p></body></html>"))
-                            self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
-
                     if self._visualiza_iso_e == True:
                         if self._cnt_pagina_erro > len(self.iso_e)-1:
                             self._cnt_pagina_erro=0
@@ -536,6 +527,31 @@ class TelaExecucao(QDialog):
                             self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Não há erros de isolação nessa peça</p></body></html>"))
                             self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
 
+                except:
+                    print("ultrapassou indice de lista esquerdo")
+
+            if self.em_execucao == False and self._nao_passsou_peca_direito == True:# Se está em execução e peça direita não passou
+                # Habilita botão de descarte ou retrabalho
+                self.ui.btDescartarDireito.setDisabled(False)
+                self.ui.btRetrabalharDireito.setDisabled(False)
+
+                if self._visualiza_condu_e == False and self._visualiza_condu_d == False and self._visualiza_iso_e == False and self._visualiza_iso_d == False:
+                    self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Erros - Tocar na Tela para visualizar</p></body></html>"))
+                    self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERMELHO});")
+                
+                try:
+                    if self._visualiza_condu_d == True:
+                        if self._cnt_pagina_erro > len(self.cond_d)-1:
+                            self._cnt_pagina_erro=0
+
+                        if self.habili_desbilita_direito == True and self.cond_d != []:
+                            self._carrega_eletrodos_direito(self.rotina.coord_eletrodo_direito, self.rotina.condutividade_direito[f"ligacao{self.cond_d[self._cnt_pagina_erro][0]}"][1][0] , -1)
+                            self.muda_cor_obj(f"lbEletrodo{self.rotina.condutividade_direito[f'ligacao{self.cond_d[self._cnt_pagina_erro][0]}'][1][0]}_D",self.VERMELHO)
+                            self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Condutor: {self.cond_d[self._cnt_pagina_erro][1]}</p></body></html>"))
+                            self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERMELHO});")
+                        else:
+                            self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Não há erros de condutividade nessa peça</p></body></html>"))
+                            self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
 
                     if self._visualiza_iso_d == True:
                         if self._cnt_pagina_erro > len(self.iso_d)-1:
@@ -544,19 +560,14 @@ class TelaExecucao(QDialog):
                         if self.habili_desbilita_direito == True and self.iso_d != []:
                             self._carrega_eletrodos_direito(self.rotina.coord_eletrodo_direito,self.rotina.isolacao_direito[f"ligacao{self.iso_d[self._cnt_pagina_erro][0]}"][3],self.rotina.isolacao_direito[f"ligacao{self.iso_d[self._cnt_pagina_erro][0]}"][4])
                             self.muda_cor_obj(f"lbEletrodo{self.rotina.isolacao_direito[f'ligacao{self.iso_d[self._cnt_pagina_erro][0]}'][3]}_D",self.VERMELHO)
-                            self.muda_cor_obj(f"lbEletrodo{self.rotina.isolacao_direito[f'ligacao{self.iso_d[self._cnt_pagina_erro][0]}'][4]}_D",self.VERMELHO)
+                            self.muda_cor_obj(f"lbEletrodo{self.rotina.isolacao_direito[f'ligacao{self.iso_d[self._cnt_pagina_erro][0]}'][4]}_D",self.VERMELHO) 
                             self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Condutor: {self.iso_d[self._cnt_pagina_erro][1]}</p></body></html>"))
                             self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERMELHO});")
                         else:
                             self.ui.lbAvisos.setText(self._translate("TelaExecucao", f"<html><head/><body><p align=\"center\">Não há erros de isolação nessa peça</p></body></html>"))
                             self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
-
                 except:
-                    print("ultrapassou indice de lista")
-
-                self._ofset_temo=0
-            else:
-                self._ofset_temo=0
+                    print("ultrapassou indice de lista direito")
         except Exception as e:
             logging.error(f"Erro na atualização de valores: {e}")
 
@@ -595,7 +606,7 @@ class TelaExecucao(QDialog):
             else:
                 self.muda_cor_obj(obj,cor) # caso contrario pinta na cor requerida
     
-    def cor_eletrodo_teste(self):
+    def cor_eletrodo_esquerdo_teste(self):
 
         try:
             if self.qual_teste == self.TESTE_COND_E:
@@ -603,16 +614,20 @@ class TelaExecucao(QDialog):
                     self.muda_cor_obj(f"lbEletrodo{self.rotina.eletrodo_testando_condu_e[0]}_E",self.AZUL)
                     self._carrega_eletrodos_esquerdo(self.rotina.coord_eletrodo_esquerdo, self.rotina.eletrodo_testando_condu_e[0], -1)
 
-            if self.qual_teste == self.TESTE_COND_D:
-                if self.rotina.eletrodo_testando_condu_d[0] != 0:
-                    self.muda_cor_obj(f"lbEletrodo{self.rotina.eletrodo_testando_condu_d[0]}_D",self.AZUL)
-                    self._carrega_eletrodos_direito(self.rotina.coord_eletrodo_direito, self.rotina.eletrodo_testando_condu_d[0], -1)
-
             if self.qual_teste == self.TESTE_ISO_E:
                 if self.rotina.eletrodo_testando_iso_e[0] != 0:
                     self.muda_cor_obj(f"lbEletrodo{self.rotina.eletrodo_testando_iso_e[0]}_E",self.LILAZ)
                     self.muda_cor_obj(f"lbEletrodo{self.rotina.eletrodo_testando_iso_e[1]}_E",self.LILAZ)
                     self._carrega_eletrodos_esquerdo(self.rotina.coord_eletrodo_esquerdo, self.rotina.eletrodo_testando_iso_e[0], self.rotina.eletrodo_testando_iso_e[1])
+        except:
+            print("Erro de combinação de eletrodos esquerdo")
+
+    def cor_eletrodo_direito_teste(self):
+        try:
+            if self.qual_teste == self.TESTE_COND_D:
+                if self.rotina.eletrodo_testando_condu_d[0] != 0:
+                    self.muda_cor_obj(f"lbEletrodo{self.rotina.eletrodo_testando_condu_d[0]}_D",self.AZUL)
+                    self._carrega_eletrodos_direito(self.rotina.coord_eletrodo_direito, self.rotina.eletrodo_testando_condu_d[0], -1)
 
             if self.qual_teste == self.TESTE_ISO_D:
                 if self.rotina.eletrodo_testando_iso_d[0] != 0:
@@ -621,7 +636,7 @@ class TelaExecucao(QDialog):
                     self._carrega_eletrodos_direito(self.rotina.coord_eletrodo_direito, self.rotina.eletrodo_testando_iso_d[0], self.rotina.eletrodo_testando_iso_d[1])
 
         except:
-            print("Erro de combinação de eletrodos")
+            print("Erro de combinação de eletrodos direito")
 
     # Método chamado quando finaliza a thread de execução
     def thread_execucao(self, cond_e, iso_e, cond_d, iso_d):
@@ -668,6 +683,8 @@ class TelaExecucao(QDialog):
                                 for i in iso_e_:
                                     if i[2] == 1:
                                         self.iso_e.append(i)
+                                self.final_testes_nao_passou()
+                                self._nao_passsou_peca_esquerdo = True
                             if self._verifica_condutividade_isolacao(cond_d_, iso_d_) == (True,True):
                                 self._carrega_peca_passou(2)# passou a direita habilitada
                             else:
@@ -678,8 +695,8 @@ class TelaExecucao(QDialog):
                                 for i in iso_d_:
                                     if i[2] == 1:
                                         self.iso_d.append(i)
-                            self.pausa_execucao()
-                            self._nao_passsou_peca = True
+                                self.final_testes_nao_passou()
+                                self._nao_passsou_peca_direito = True
 
                 elif self.habili_desbilita_direito == False and self.habili_desbilita_esquerdo == True:# Se só esquerdo estiver habilitado
                     if cond_e_ != [] and iso_e_ != []:
@@ -693,8 +710,8 @@ class TelaExecucao(QDialog):
                             for i in iso_e_:
                                 if i[2] == 1:
                                     self.iso_e.append(i)
-                            self._nao_passsou_peca = True
-                            self.pausa_execucao()
+                            self._nao_passsou_peca_esquerdo = True
+                            self.final_testes_nao_passou()
 
                 elif self.habili_desbilita_direito == True and self.habili_desbilita_esquerdo == False:# Se só direito estiver habilitado
                     if cond_d_ != [] and iso_d_ != []:
@@ -708,8 +725,8 @@ class TelaExecucao(QDialog):
                             for i in iso_d_:
                                 if i[2] == 1:
                                     self.iso_d.append(i)
-                            self._nao_passsou_peca = True
-                            self.pausa_execucao()
+                            self._nao_passsou_peca_direito = True
+                            self.final_testes_nao_passou()
             self._cnt_acionamento_botao=0
         except Exception as e:  
             logging.error(f"Erro na execução: {e}")
@@ -719,30 +736,23 @@ class TelaExecucao(QDialog):
     #               2 : Passou só a direita habilitada
     def _carrega_peca_passou(self, qual_passou):
             if qual_passou == 0: # Se passou as duas peças
-                if self._retrabalho == False:# Se não for um retrabalho 
+                if self._retrabalho_esquerdo == False:# Se não for um retrabalho 
                     self._cnt_peca_passou_e += 1
-                    self._cnt_peca_passou_d += 1
                     self.ui.txAprovadoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_passou_e}"))
+                elif self._retrabalho_direito == False:
+                    self._cnt_peca_passou_d += 1
                     self.ui.txAprovadoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_passou_d}"))
-                    
-                else:
-                    self._retrabalho = False # Para a próxima vez não ser um retrabalho de novo
-                    
-                    if self.habili_desbilita_esquerdo == False:
-                        self.ui.lbImgEsquerdo.setEnabled(False)
-                    else:
-                        self.ui.lbImgEsquerdo.setEnabled(True)
 
-                    if self.habili_desbilita_direito == False:
-                        self.ui.lbImgDireito.setEnabled(False)
-                    else:
-                        self.ui.lbImgDireito.setEnabled(True)
-
+                elif self._retrabalho_esquerdo == True:
+                    self._retrabalho_esquerdo = False # Para a próxima vez não ser um retrabalho de novo
                     self._cnt_peca_retrabalho_e+=1
-                    self._cnt_peca_retrabalho_d+=1
                     self.ui.txRetrabalhoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_e}"))
-                    self.ui.txRetrabalhoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_d}"))
 
+                elif self._retrabalho_direito == True:
+                    self._retrabalho_direito = False
+                    self._cnt_peca_retrabalho_d+=1
+                    self.ui.txRetrabalhoD.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_d}"))
+   
                 self.quantidade_produzida_esquerdo+=1
                 self.quantidade_produzida_direito+=1
                 self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
@@ -754,23 +764,12 @@ class TelaExecucao(QDialog):
                 self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
                 
             elif qual_passou == 1: # Se passou só a esquerda habilitada
-                if self._retrabalho == False:# Se não for um retralho 
+                if self._retrabalho_esquerdo == False:# Se não for um retralho 
                     self._cnt_peca_passou_e += 1
                     self.ui.txAprovadoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_passou_e}"))
                 else:
-                    self._retrabalho = False # Para a próxima vez não ser um retrabalho de novo
-                    
-                    if self.habili_desbilita_esquerdo == False:
-                        self.ui.lbImgEsquerdo.setEnabled(False)
-                    else:
-                        self.ui.lbImgEsquerdo.setEnabled(True)
-
-                    if self.habili_desbilita_direito == False:
-                        self.ui.lbImgDireito.setEnabled(False)
-                    else:
-                        self.ui.lbImgDireito.setEnabled(True)
-                    
-
+                    self._retrabalho_esquerdo = False # Para a próxima vez não ser um retrabalho de novo
+                
                     self._cnt_peca_retrabalho_e+=1
                     self.ui.txRetrabalhoE.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_e}"))
 
@@ -782,21 +781,11 @@ class TelaExecucao(QDialog):
                 self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
                 self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
             elif qual_passou == 2: # Se passou só a direita habilitada
-                if self._retrabalho == False:# Se não for um retralho 
+                if self._retrabalho_direito == False:# Se não for um retralho 
                     self._cnt_peca_passou_d += 1
                     self.ui.txAprovadoD.setText(self._translate("TelaExecucao", f"{self._cnt_peca_passou_d}"))
                 else:
-                    self._retrabalho = False # Para a próxima vez não ser um retrabalho de novo
-                    
-                    if self.habili_desbilita_esquerdo == False:
-                        self.ui.lbImgEsquerdo.setEnabled(False)
-                    else:
-                        self.ui.lbImgEsquerdo.setEnabled(True)
-
-                    if self.habili_desbilita_direito == False:
-                        self.ui.lbImgDireito.setEnabled(False)
-                    else:
-                        self.ui.lbImgDireito.setEnabled(True)
+                    self._retrabalho_direito = False # Para a próxima vez não ser um retrabalho de novo
 
                     self._cnt_peca_retrabalho_d+=1
                     self.ui.txRetrabalhoD.setText( self._translate("TelaExecucao", f"{self._cnt_peca_retrabalho_d}"))
@@ -923,15 +912,33 @@ class TelaExecucao(QDialog):
         self.ui.lbEletrodo8_E.setParent(self.ui.lbImgEsquerdo) # Seta label para acertar coordenadas
 
     def inicia_execucao(self):
+        botoes_liberado = self._verifica_botoes_liberados()
         if self.execucao_habilita_desabilita == False:
             self.rotina.sobe_pistao()
-            self.execucao_habilita_desabilita = True# Habilita para executar programa
-            # Desabilita botões que não podem ser acionados durante programa
-            self._desabilita_botoes(False)
-            self.ui.lbAvisos.setVisible(True)
-            self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
-            self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
-            self._cnt_acionamento_botao=0
+            if botoes_liberado == True:
+                self.execucao_habilita_desabilita = True# Habilita para executar programa
+                self._desabilita_botoes(False)
+                self.ui.lbAvisos.setVisible(True)
+                self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
+                self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
+                self._cnt_acionamento_botao=0
+
+    def _verifica_botoes_liberados(self):
+        if self.ui.btRetrabalharEsquerdo.isEnabled() == False and self.ui.btRetrabalharDireito.isEnabled() == False and self.ui.btDescartarEsquerdo.isEnabled() == False and self.ui.btDescartarDireito.isEnabled() == False:
+            return True
+        else:
+            return False
+
+    def final_testes_nao_passou(self):
+        self.execucao_habilita_desabilita = False# desabilita para executar programa
+        self.em_execucao = False
+        self.rotina.flag_erro_geral = True
+        # Habilita botões que não podem ser acionados durante programa
+        self._desabilita_botoes(True)
+        self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Parada</p></body></html>"))
+        self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
+        self._cnt_acionamento_botao=0
+        
 
     def pausa_execucao(self):
         self.execucao_habilita_desabilita = False# desabilita para executar programa
@@ -943,18 +950,25 @@ class TelaExecucao(QDialog):
         self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
         self._cnt_acionamento_botao=0
 
+        motivo_pause = MotivoPausa( dado=self.dado, io=self.io,db=self.database, rotina=self.rotina)
+        motivo_pause.exec_()
+        self.salva_motivo_parada(motivo_pause.motivo_pausa)
+
     def para_execucao(self):
         self.msg_box.exec(msg="Deseja realmente encerar rotina?")
         if self.msg_box.yes_no == True:
-            self.salva_rotina()
-            self._nao_passsou_peca = False# Flag de peça não passo habilitada para novo teste
+            # self.salva_rotina()
+            self._nao_passsou_peca_esquerdo = False# Flag de peça não passo habilitada para novo teste
+            self._nao_passsou_peca_direito = False
             self._desabilita_botoes(False)
             self.ui.lbAvisos.setVisible(True)
             self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
             self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
             self._cnt_acionamento_botao=0
-            self.ui.btDescartar.setDisabled(True)# Volta a desabilitar esse botão
-            self.ui.btRetrabalhar.setDisabled(True)# Volta a desabilitar esse botão
+            self.ui.btDescartarEsquerdo.setDisabled(True)# Volta a desabilitar esse botão
+            self.ui.btDescartarDireito.setDisabled(True)# Volta a desabilitar esse botão
+            self.ui.btRetrabalharEsquerdo.setDisabled(True)# Volta a desabilitar esse botão
+            self.ui.btRetrabalharDireito.setDisabled(True)# Volta a desabilitar esse botão
             self.ui.lbContinuIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
             self.ui.lbContinuIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
             self.ui.lbIsolaIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
@@ -963,33 +977,27 @@ class TelaExecucao(QDialog):
             self._visualiza_condu_d = False
             self._visualiza_iso_e = False
             self._visualiza_iso_d = False
-            self._retrabalho = True
             self.rotina_iniciada = False
             self.close()
-        # self.execucao_habilita_desabilita = False# desabilita para executar programa
-        # self.em_execucao = False
-        # self.rotina.flag_erro_geral = True
-        # # Habilita botões que não podem ser acionados durante programa
-        # self._desabilita_botoes(True)
 
-    def botao_retrabalho(self):
-        self._nao_passsou_peca = False# Flag de peça não passo habilitada para novo teste
+    def botao_retrabalho_esquerdo(self):
+        self._nao_passsou_peca_esquerdo = False# Flag de peça não passo habilitada para novo teste
         self._desabilita_botoes(False)
         self.ui.lbAvisos.setVisible(True)
-        self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
-        self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
-        self._cnt_acionamento_botao=0
-        self.ui.btDescartar.setDisabled(True)# Volta a desabilitar esse botão
-        self.ui.btRetrabalhar.setDisabled(True)# Volta a desabilitar esse botão
+        # self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
+        # self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
+        # self._cnt_acionamento_botao=0
+        self.ui.btDescartarEsquerdo.setDisabled(True)# Volta a desabilitar esse botão
+        self.ui.btRetrabalharEsquerdo.setDisabled(True)# Volta a desabilitar esse botão
         self.ui.lbContinuIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
-        self.ui.lbContinuIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        # self.ui.lbContinuIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
         self.ui.lbIsolaIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
-        self.ui.lbIsolaIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        # self.ui.lbIsolaIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
         self._visualiza_condu_e = False
-        self._visualiza_condu_d = False
+        # self._visualiza_condu_d = False
         self._visualiza_iso_e = False
-        self._visualiza_iso_d = False
-        self._retrabalho = True
+        # self._visualiza_iso_d = False
+        self._retrabalho_esquerdo = True
 
         # Variáveis para armazenar condicão de condutividade e isolação dos lados esquerdo e direito colocados em condição de não está sendo avaliado
         # 0 = indica que não está sendo avaliado
@@ -997,37 +1005,72 @@ class TelaExecucao(QDialog):
         # 2 = indica que passou
         self.esquerda_condu_ok = 0
         self.esquerda_iso_ok = 0
+        # self.direita_condu_ok = 0
+        # self.direita_iso_ok = 0
+
+        # if (self.cond_e != [] or self.iso_e != []) and (self.cond_d != [] or self.iso_d != []):# se os dois lados estiverem com problemas
+        #     self.ui.lbImgEsquerdo.setEnabled(True)
+        #     self.ui.lbImgDireito.setEnabled(True)
+        # if self.cond_e != [] or self.iso_e != []:# Se só o lado esquerdo estiver com problemas
+        #     self.ui.lbImgEsquerdo.setEnabled(True)
+        #     self.ui.lbImgDireito.setEnabled(False)
+        # elif self.cond_d != [] or self.iso_d != []:# Se só o lado direito estiver com problemas
+        #     self.ui.lbImgEsquerdo.setEnabled(False)
+        #     self.ui.lbImgDireito.setEnabled(True)
+
+    def botao_retrabalho_direito(self):
+        self._nao_passsou_peca_direito = False
+        self._desabilita_botoes(False)
+        # self.ui.lbAvisos.setVisible(True)
+        # self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
+        # self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
+        # self._cnt_acionamento_botao=0
+        self.ui.btDescartarDireito.setDisabled(True)# Volta a desabilitar esse botão
+        self.ui.btRetrabalharDireito.setDisabled(True)# Volta a desabilitar esse botão
+        # self.ui.lbContinuIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        self.ui.lbContinuIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        # self.ui.lbIsolaIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        self.ui.lbIsolaIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        # self._visualiza_condu_e = False
+        self._visualiza_condu_d = False
+        # self._visualiza_iso_e = False
+        self._visualiza_iso_d = False
+        self._retrabalho_direito = True
+
+        # Variáveis para armazenar condicão de condutividade e isolação dos lados esquerdo e direito colocados em condição de não está sendo avaliado
+        # 0 = indica que não está sendo avaliado
+        # 1 = indica que não passou
+        # 2 = indica que passou
+        # self.esquerda_condu_ok = 0
+        # self.esquerda_iso_ok = 0
         self.direita_condu_ok = 0
         self.direita_iso_ok = 0
 
-        if (self.cond_e != [] or self.iso_e != []) and (self.cond_d != [] or self.iso_d != []):# se os dois lados estiverem com problemas
-            self.ui.lbImgEsquerdo.setEnabled(True)
-            self.ui.lbImgDireito.setEnabled(True)
-        elif self.cond_e != [] or self.iso_e != []:# Se só o lado esquerdo estiver com problemas
-            self.ui.lbImgEsquerdo.setEnabled(True)
-            self.ui.lbImgDireito.setEnabled(False)
-        elif self.cond_d != [] or self.iso_d != []:# Se só o lado direito estiver com problemas
-            self.ui.lbImgEsquerdo.setEnabled(False)
-            self.ui.lbImgDireito.setEnabled(True)
+        # if (self.cond_e != [] or self.iso_e != []) and (self.cond_d != [] or self.iso_d != []):# se os dois lados estiverem com problemas
+        #     self.ui.lbImgEsquerdo.setEnabled(True)
+        #     self.ui.lbImgDireito.setEnabled(True)
+        # elif self.cond_e != [] or self.iso_e != []:# Se só o lado esquerdo estiver com problemas
+        #     self.ui.lbImgEsquerdo.setEnabled(True)
+        #     self.ui.lbImgDireito.setEnabled(False)
+        # if self.cond_d != [] or self.iso_d != []:# Se só o lado direito estiver com problemas
+        #     self.ui.lbImgEsquerdo.setEnabled(False)
+        #     self.ui.lbImgDireito.setEnabled(True)
 
 
-    def botao_descarte(self):
-        self._nao_passsou_peca = False# Flag de peça não passo habilitada para novo teste
+
+    def botao_descarte_esquerdo(self):
+        self._nao_passsou_peca_esquerdo = False# Flag de peça não passo habilitada para novo teste
         self._desabilita_botoes(False)
         self.ui.lbAvisos.setVisible(True)
         self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
         self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
         self._cnt_acionamento_botao=0
-        self.ui.btDescartar.setDisabled(True)# Volta a desabilitar esse botão
-        self.ui.btRetrabalhar.setDisabled(True)# Volta a desabilitar esse botão
+        self.ui.btDescartarEsquerdo.setDisabled(True)# Volta a desabilitar esse botão
+        self.ui.btRetrabalharEsquerdo.setDisabled(True)# Volta a desabilitar esse botão
         self.ui.lbContinuIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
-        self.ui.lbContinuIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
         self.ui.lbIsolaIndicaE.setStyleSheet(f"background-color: rgb({self.CINZA});")
-        self.ui.lbIsolaIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
         self._visualiza_condu_e = False
-        self._visualiza_condu_d = False
         self._visualiza_iso_e = False
-        self._visualiza_iso_d = False
 
         # Variáveis para armazenar condicão de condutividade e isolação dos lados esquerdo e direito colocados em condição de não está sendo avaliado
         # 0 = indica que não está sendo avaliado
@@ -1035,20 +1078,40 @@ class TelaExecucao(QDialog):
         # 2 = indica que passou
         self.esquerda_condu_ok = 0
         self.esquerda_iso_ok = 0
+
+        if self.cond_e != [] or self.iso_e != []:# Se só o lado esquerdo estiver com problemas
+            self._cnt_peca_reprovou_e+=1
+            self.ui.txReprovadoE.setText(f"{self._cnt_peca_reprovou_e}")
+            self.quantidade_produzida_esquerdo+=1
+            self.atualiza_producao_label("E", self.quantidade_produzida_esquerdo, self.quantidade_produzir_esquerdo)
+        self.salva_rotina()
+
+    def botao_descarte_direito(self):
+        self._nao_passsou_peca_direito = False
+        self._desabilita_botoes(False)
+        self.ui.lbAvisos.setVisible(True)
+        self.ui.lbAvisos.setText(self._translate("TelaExecucao", "<html><head/><body><p align=\"center\">Máquina pronta</p></body></html>"))
+        self.ui.lbAvisos.setStyleSheet(f"background-color: rgb({self.VERDE});")
+        self._cnt_acionamento_botao=0
+        self.ui.btDescartarDireito.setDisabled(True)
+        self.ui.btRetrabalharDireito.setDisabled(True)
+        self.ui.lbContinuIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        self.ui.lbIsolaIndicaD.setStyleSheet(f"background-color: rgb({self.CINZA});")
+        self._visualiza_condu_d = False
+        self._visualiza_iso_d = False
+
+        # Variáveis para armazenar condicão de condutividade e isolação dos lados esquerdo e direito colocados em condição de não está sendo avaliado
+        # 0 = indica que não está sendo avaliado
+        # 1 = indica que não passou
+        # 2 = indica que passou
         self.direita_condu_ok = 0
         self.direita_iso_ok = 0
 
-        if (self.cond_e != [] or self.iso_e != []) and (self.cond_d != [] or self.iso_d != []):# se os dois lados estiverem com problemas
-            self._cnt_peca_reprovou_e+=1
-            self._cnt_peca_reprovou_d+=1
-            self.ui.txReprovadoE.setText(f"{self._cnt_peca_reprovou_e}")
-            self.ui.txReprovadoD.setText(f"{self._cnt_peca_reprovou_d}")
-        elif self.cond_e != [] or self.iso_e != []:# Se só o lado esquerdo estiver com problemas
-            self._cnt_peca_reprovou_e+=1
-            self.ui.txReprovadoE.setText(f"{self._cnt_peca_reprovou_e}")
-        elif self.cond_d != [] or self.iso_d != []:# Se só o lado direito estiver com problemas
+        if self.cond_d != [] or self.iso_d != []:# Se só o lado direito estiver com problemas
             self._cnt_peca_reprovou_d+=1
             self.ui.txReprovadoD.setText(f"{self._cnt_peca_reprovou_d}")
+            self.quantidade_produzida_direito+=1
+            self.atualiza_producao_label("D", self.quantidade_produzida_direito, self.quantidade_produzir_direito)
         self.salva_rotina()
 
     def img_esquerda_clicada(self, event):
@@ -1058,7 +1121,7 @@ class TelaExecucao(QDialog):
         self._cnt_pagina_erro+=1
 
     def select_visu_cond_e(self, event):
-        if self.habili_desbilita_esquerdo == True and self._nao_passsou_peca == True:
+        if self.habili_desbilita_esquerdo == True and self._nao_passsou_peca_esquerdo == True:
             self._visualiza_condu_e = True
             self._visualiza_condu_d = False
             self._visualiza_iso_e = False
@@ -1067,7 +1130,7 @@ class TelaExecucao(QDialog):
 
 
     def select_visu_iso_e(self, event):
-        if self.habili_desbilita_esquerdo == True and self._nao_passsou_peca == True:
+        if self.habili_desbilita_esquerdo == True and self._nao_passsou_peca_esquerdo == True:
             self._visualiza_condu_e = False
             self._visualiza_condu_d = False
             self._visualiza_iso_e = True
@@ -1075,7 +1138,7 @@ class TelaExecucao(QDialog):
             self.selecao_visualisacao()
 
     def select_visu_cond_d(self, event):
-        if self.habili_desbilita_direito == True and self._nao_passsou_peca == True:
+        if self.habili_desbilita_direito == True and self._nao_passsou_peca_direito == True:
             self._visualiza_condu_e = False
             self._visualiza_condu_d = True
             self._visualiza_iso_e = False
@@ -1083,7 +1146,7 @@ class TelaExecucao(QDialog):
             self.selecao_visualisacao()
 
     def select_visu_iso_d(self, event):
-        if self.habili_desbilita_direito == True and self._nao_passsou_peca == True:
+        if self.habili_desbilita_direito == True and self._nao_passsou_peca_direito == True:
             self._visualiza_condu_e = False
             self._visualiza_condu_d = False
             self._visualiza_iso_e = False
@@ -1112,7 +1175,6 @@ class TelaExecucao(QDialog):
 
     def _desabilita_botoes(self, hab_dasab):
         # Desabilita ou habilita botões que não podem ser acionados durante programa
-        self.ui.btVoltar.setEnabled(hab_dasab)
         self.ui.btContato.setEnabled(hab_dasab)
 
     def salva_rotina(self):
@@ -1124,9 +1186,33 @@ class TelaExecucao(QDialog):
         except Exception as e:
             logging.error(f"Erro ao salvar rotina: {e}")
 
-    def voltar(self):
-        self.dado.set_telas(self.dado.TELA_INICIAL)
-        self.close()
+    def salva_motivo_parada(self, motivo):
+        try:
+            if self.habili_desbilita_esquerdo == True:
+                self.database.create_record_motivo_parada(self.id_esquerdo, motivo)
+            if self.habili_desbilita_direito == True:
+                self.database.create_record_motivo_parada(self.id_direito, motivo)
+        except Exception as e:
+            logging.error(f"Erro ao salvar motivo de parada: {e}")
+
+    def salva_motivo_finalizado(self):
+        try:
+            if self.habili_desbilita_esquerdo == True:
+                self.database.create_record_motivo_finalizacao(self.id_esquerdo)
+            if self.habili_desbilita_direito == True:
+                self.database.create_record_motivo_finalizacao(self.id_direito)
+        except Exception as e:
+            logging.error(f"Erro ao salvar motivo de finalizado: {e}")
+
+    def salva_troca_usuario(self):
+        try:
+            if self.habili_desbilita_esquerdo == True:
+                self.database.create_record_troca_usuario(self.id_esquerdo)
+            if self.habili_desbilita_direito == True:
+                self.database.create_record_troca_usuario(self.id_direito)
+        except Exception as e:
+            logging.error(f"Erro ao salvar troca de usuário: {e}")
+
     def closeEvent(self, event):
         try:
             self.atualizador.parar()

@@ -108,7 +108,7 @@ class InOut:
     
     
 class IO_MODBUS:
-    def __init__(self):
+    def __init__(self, dado=None):
 
         self.io_rpi = InOut()
         self.ADR_1 = 1 # Endereço do WP8027 dos relés do lado esquerdo - 16 saídas
@@ -120,6 +120,8 @@ class IO_MODBUS:
         self.valor_saida_esquerdo = 0
         self.valor_saida_geral = 0
         self.valor_saida_geral2 = 0
+
+        self.dado = dado
 
         self.fake_modbus = True
 
@@ -315,7 +317,7 @@ class IO_MODBUS:
             return self.wp_8026_(adr=adr, input=input)
         else:
             # return random.randint(0,1)
-            return 1 if input == 8  else 1
+            return self.dado.passa_condutividade  if input == 8 else self.dado.passa_isolacao
     def wp_8026_(self, adr, input):
         dados_recebidos = None
 

@@ -22,6 +22,10 @@ class Dado:
         self._senha_login = ""
         self._permissao_login = 0
         self.full_scream = False
+
+        self.passa_condutividade =  1
+        self.passa_isolacao =  0
+
     @property
     def telas(self):
         return self._telas

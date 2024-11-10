@@ -13,7 +13,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     dado = Dado()
     db = DataBase()
-    io = IO_MODBUS()
+    io = IO_MODBUS(dado=dado)
     rotina = RotinaPrg(dado=dado, io=io, db=db )
 
     window = TelaInicial(io=io, dado=dado, db=db, rotina=rotina)

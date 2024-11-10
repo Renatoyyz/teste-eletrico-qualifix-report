@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QDialog
-from PyQt5.QtCore import QDateTime, Qt, QCoreApplication, QObject, pyqtSignal, QThread, pyqtSlot, QMetaObject, Q_ARG
+from PyQt5.QtCore import QDateTime, Qt, QCoreApplication, QEvent, pyqtSignal, QThread, pyqtSlot, QMetaObject, Q_ARG
 from datetime import datetime
 from Controller.Message import MessageBox, SimpleMessageBox
 from Controller.OpenFile import OpenFile
@@ -281,6 +281,16 @@ class TelaExecucao(QDialog):
         self.ui.lbContinuIndicaD.mousePressEvent = self.select_visu_cond_d
         self.ui.lbIsolaIndicaE.mousePressEvent = self.select_visu_iso_e
         self.ui.lbIsolaIndicaD.mousePressEvent = self.select_visu_iso_d
+
+        self.installEventFilter(self)
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_C:
+                self.dado.passa_condutividade = 1 if self.dado.passa_condutividade == 0 else 0
+            elif event.key() == Qt.Key_I:
+                self.dado.passa_isolacao = 1 if self.dado.passa_isolacao == 0 else 0
+        return super(TelaExecucao, self).eventFilter(source, event)
 
     def carregar_configuracoes(self):
         self.load_config()
